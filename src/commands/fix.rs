@@ -8,18 +8,18 @@ use crate::metadata::{self, SkillMetadata};
 use crate::output;
 
 #[derive(Debug)]
-struct SkillInstance {
-    agent_id: &'static str,
-    agent_name: &'static str,
-    path: PathBuf,
-    content_hash: u64,
-    has_metadata: bool,
+pub struct SkillInstance {
+    pub agent_id: &'static str,
+    pub agent_name: &'static str,
+    pub path: PathBuf,
+    pub content_hash: u64,
+    pub has_metadata: bool,
     #[allow(dead_code)]
-    source: Option<String>,
+    pub source: Option<String>,
 }
 
 #[derive(Debug, Clone)]
-enum Action {
+pub enum Action {
     Spread {
         skill_name: String,
         source_path: PathBuf,
@@ -131,53 +131,7 @@ struct ActionGroup {
     actions: Vec<Action>,
 }
 
-pub fn run(global: bool, json: bool) -> Result<(), String> {
-    let project_root =
-        std::env::current_dir().map_err(|e| format!("Failed to get current directory: {e}"))?;
-
-    let detected = agents::detect_agents(true, &project_root)?;
-    let detected_ids: BTreeSet<&str> = detected.iter().map(|a| a.id).collect();
-
-    let mut skills: BTreeMap<String, Vec<SkillInstance>> = BTreeMap::new();
-
-    if global {
-        // Global only
-        scan_scope(&mut skills, true, &project_root)?;
-    } else {
-        // Default: both project and global (same as survey)
-        scan_scope(&mut skills, false, &project_root)?;
-        scan_scope(&mut skills, true, &project_root)?;
-    }
-
-    let actions = build_plan(&skills, &detected_ids)?;
-
-    if actions.is_empty() {
-        if json {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&serde_json::json!({
-                    "action": "fix",
-                    "plan": [],
-                    "message": "No issues to fix."
-                }))
-                .map_err(|e| format!("Failed to serialize JSON: {e}"))?
-            );
-        } else {
-            println!("{} No issues to fix.", output::green("✓"));
-        }
-        return Ok(());
-    }
-
-    if json {
-        print_plan_json(&actions)?;
-    } else {
-        run_interactive(&actions, global, &project_root)?;
-    }
-
-    Ok(())
-}
-
-fn build_plan(
+pub fn build_plan(
     skills: &BTreeMap<String, Vec<SkillInstance>>,
     detected_ids: &BTreeSet<&str>,
 ) -> Result<Vec<Action>, String> {
@@ -275,7 +229,7 @@ fn group_actions(actions: &[Action]) -> Vec<ActionGroup> {
     groups
 }
 
-fn print_plan_json(actions: &[Action]) -> Result<(), String> {
+pub fn print_plan_json(actions: &[Action]) -> Result<(), String> {
     let plan: Vec<serde_json::Value> = actions.iter().map(|a| a.to_json()).collect();
     let out = serde_json::json!({
         "action": "fix",
@@ -315,7 +269,11 @@ fn execute_skill_actions(
     Ok(())
 }
 
-fn run_interactive(actions: &[Action], global: bool, project_root: &Path) -> Result<(), String> {
+pub fn run_interactive(
+    actions: &[Action],
+    global: bool,
+    project_root: &Path,
+) -> Result<(), String> {
     let groups = group_actions(actions);
     let theme = ColorfulTheme::default();
     let mut total_applied = 0;
@@ -553,45 +511,6 @@ fn execute_action(action: &Action, global: bool, project_root: &Path) -> Result<
         Action::Prune { path, .. } => std::fs::remove_dir_all(path)
             .map_err(|e| format!("Failed to remove {}: {e}", path.display())),
     }
-}
-
-fn scan_scope(
-    skills: &mut BTreeMap<String, Vec<SkillInstance>>,
-    global: bool,
-    project_root: &Path,
-) -> Result<(), String> {
-    for agent in AGENTS {
-        let dir = agents::skill_dir(agent, global, project_root)?;
-        if !dir.exists() {
-            continue;
-        }
-        let entries = match std::fs::read_dir(&dir) {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if !path.is_dir() || !path.join("SKILL.md").exists() {
-                continue;
-            }
-            let name = entry.file_name().to_string_lossy().to_string();
-            let content_hash = hash::hash_skill_md(&path);
-            let (has_metadata, source) = match SkillMetadata::read(&path) {
-                Ok(meta) => (true, Some(meta.source)),
-                Err(_) => (false, None),
-            };
-
-            skills.entry(name).or_default().push(SkillInstance {
-                agent_id: agent.id,
-                agent_name: agent.name,
-                path,
-                content_hash,
-                has_metadata,
-                source,
-            });
-        }
-    }
-    Ok(())
 }
 
 fn copy_dir(src: &Path, dest: &Path) -> Result<(), String> {

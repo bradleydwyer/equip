@@ -10,10 +10,11 @@ pub fn run(source: Option<&str>, path: Option<&str>, protocol: Option<&str>) -> 
         return Err("Provide either a GitHub repo or --path, not both.".to_string());
     }
 
-    if let Some(p) = protocol {
-        if p != "ssh" && p != "https" {
-            return Err("--protocol must be 'ssh' or 'https'".to_string());
-        }
+    if let Some(p) = protocol
+        && p != "ssh"
+        && p != "https"
+    {
+        return Err("--protocol must be 'ssh' or 'https'".to_string());
     }
 
     if let Some(path_str) = path {
@@ -147,8 +148,7 @@ fn init_git_backend(source_str: &str, protocol: Option<&str>) -> Result<(), Stri
 
         // Create ops directory, README, and initial commit
         let ops_path = temp_repo.join("ops");
-        std::fs::create_dir_all(&ops_path)
-            .map_err(|e| format!("Failed to create ops dir: {e}"))?;
+        std::fs::create_dir_all(&ops_path).map_err(|e| format!("Failed to create ops dir: {e}"))?;
 
         std::fs::write(ops_path.join(".gitkeep"), "")
             .map_err(|e| format!("Failed to write .gitkeep: {e}"))?;
@@ -274,25 +274,28 @@ fn clone_with_fallback(
         }
 
         // Connection/auth error — try next protocol
-        if stderr.contains("timed out")
+        if (stderr.contains("timed out")
             || stderr.contains("Connection refused")
             || stderr.contains("Host key verification failed")
             || stderr.contains("Permission denied")
-            || stderr.contains("Could not read from remote repository")
+            || stderr.contains("Could not read from remote repository"))
+            && urls.len() > 1
         {
-            if urls.len() > 1 {
-                eprintln!(
-                    "Warning: {} clone failed, trying {}...",
-                    proto_name,
-                    if *proto_name == "ssh" { "https" } else { "ssh" }
-                );
-                continue;
-            }
+            eprintln!(
+                "Warning: {} clone failed, trying {}...",
+                proto_name,
+                if *proto_name == "ssh" { "https" } else { "ssh" }
+            );
+            continue;
         }
 
         // Unknown error
         let _ = std::fs::remove_dir_all(dest);
-        return Err(format!("git clone failed ({}): {}", proto_name, stderr.trim()));
+        return Err(format!(
+            "git clone failed ({}): {}",
+            proto_name,
+            stderr.trim()
+        ));
     }
 
     // All protocols failed

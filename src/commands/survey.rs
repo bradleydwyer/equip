@@ -18,7 +18,7 @@ struct SkillInstance {
     source: Option<String>,
 }
 
-pub fn run(global: bool, json: bool, scan_path: Option<&str>) -> Result<(), String> {
+pub fn run(global: bool, json: bool, scan_path: Option<&str>, fix: bool) -> Result<(), String> {
     let project_root =
         std::env::current_dir().map_err(|e| format!("Failed to get current directory: {e}"))?;
 
@@ -162,7 +162,50 @@ pub fn run(global: bool, json: bool, scan_path: Option<&str>) -> Result<(), Stri
         }
     }
 
-    if json {
+    if fix {
+        // Convert survey scan to fix scan and run fix flow
+        let mut fix_skills: BTreeMap<String, Vec<super::fix::SkillInstance>> = BTreeMap::new();
+        for (name, instances) in &skills {
+            let fix_instances: Vec<super::fix::SkillInstance> = instances
+                .iter()
+                .map(|i| super::fix::SkillInstance {
+                    agent_id: i.agent_id,
+                    agent_name: i.agent_name,
+                    path: i.path.clone(),
+                    content_hash: i.content_hash,
+                    has_metadata: i.has_metadata,
+                    source: i.source.clone(),
+                })
+                .collect();
+            fix_skills.insert(name.clone(), fix_instances);
+        }
+
+        let actions = super::fix::build_plan(&fix_skills, &detected_ids)?;
+        if actions.is_empty() {
+            if json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&serde_json::json!({
+                        "action": "fix",
+                        "plan": [],
+                        "message": "No issues to fix."
+                    }))
+                    .map_err(|e| format!("Failed to serialize JSON: {e}"))?
+                );
+            } else {
+                println!("\n{} No issues to fix.", output::green("✓"));
+            }
+            return Ok(());
+        }
+
+        if json {
+            super::fix::print_plan_json(&actions)?;
+        } else {
+            let project_root = std::env::current_dir()
+                .map_err(|e| format!("Failed to get current directory: {e}"))?;
+            super::fix::run_interactive(&actions, global, &project_root)?;
+        }
+    } else if json {
         print_json(&skills, &issues)?;
     } else {
         print_human(

@@ -376,14 +376,18 @@ fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn resolve_skill_name(skill_path: &Path, frontmatter_name: &str, temp_dir: Option<&Path>) -> String {
+fn resolve_skill_name(
+    skill_path: &Path,
+    frontmatter_name: &str,
+    temp_dir: Option<&Path>,
+) -> String {
     // When the skill is at the root of a temp clone dir, the directory name
     // is a meaningless timestamp (e.g. "equip-1773835822037"). Use the
     // frontmatter name instead.
-    if let Some(temp) = temp_dir {
-        if skill_path == temp {
-            return frontmatter_name.to_string();
-        }
+    if let Some(temp) = temp_dir
+        && skill_path == temp
+    {
+        return frontmatter_name.to_string();
     }
     skill_path
         .file_name()

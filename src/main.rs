@@ -91,17 +91,6 @@ enum Commands {
         json: bool,
     },
 
-    /// Fix issues found by survey (interactive or JSON plan)
-    Fix {
-        /// Fix project-local skills only (default: global)
-        #[arg(short, long)]
-        local: bool,
-
-        /// Output a fix plan as JSON (no interactive prompts)
-        #[arg(long)]
-        json: bool,
-    },
-
     /// Survey installed skills for sprawl, mismatches, and issues
     Survey {
         /// Survey project-local skills only (default: global)
@@ -112,13 +101,18 @@ enum Commands {
         #[arg(short, long)]
         path: Option<String>,
 
+        /// Interactively fix issues found
+        #[arg(long)]
+        fix: bool,
+
         /// Output as JSON
         #[arg(long)]
         json: bool,
     },
 
     /// Generate AGENTS.md with installed skills
-    Sync {
+    #[command(alias = "sync")]
+    Agents {
         /// Output file path (default: AGENTS.md)
         #[arg(short, long)]
         output: Option<String>,
@@ -224,15 +218,20 @@ fn main() {
             commands::update::run(name.as_deref(), !local, json)
         }
 
-        Commands::Fix { local, json } => commands::fix::run(!local, json),
+        Commands::Survey {
+            local,
+            json,
+            path,
+            fix,
+        } => commands::survey::run(!local, json, path.as_deref(), fix),
 
-        Commands::Survey { local, json, path } => {
-            commands::survey::run(!local, json, path.as_deref())
-        }
+        Commands::Agents { output, json } => commands::sync::run(output.as_deref(), json),
 
-        Commands::Sync { output, json } => commands::sync::run(output.as_deref(), json),
-
-        Commands::Init { source, path, protocol } => commands::init::run(source.as_deref(), path.as_deref(), protocol.as_deref()),
+        Commands::Init {
+            source,
+            path,
+            protocol,
+        } => commands::init::run(source.as_deref(), path.as_deref(), protocol.as_deref()),
 
         Commands::Export { output, json } => commands::export::run(output.as_deref(), json),
 

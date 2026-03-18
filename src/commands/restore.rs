@@ -267,4 +267,3 @@ fn read_from_file(path: &str) -> Result<Vec<RestoreEntry>, String> {
         })
         .collect())
 }
-

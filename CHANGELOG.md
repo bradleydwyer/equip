@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.6
+
+- Rename `equip sync` to `equip agents` (`sync` kept as alias)
+- Merge `equip fix` into `equip survey --fix`
+- `equip update` now skips up-to-date skills instead of re-installing everything
+- Fix pre-existing clippy warnings in init.rs and install.rs
+
 ## 0.0.5
 
 - Add `--protocol ssh|https` flag to `equip init` for explicit protocol selection
