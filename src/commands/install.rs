@@ -58,6 +58,7 @@ fn run_inner(
         json,
         quiet,
         source_info,
+        temp_dir.as_deref(),
     );
 
     if let Some(temp) = &temp_dir {
@@ -80,6 +81,7 @@ fn do_install(
     json: bool,
     quiet: bool,
     source_info: SourceInfo,
+    temp_dir: Option<&Path>,
 ) -> Result<(), String> {
     let skills = skill::discover_skills(skill_dir)?;
 
@@ -95,7 +97,7 @@ fn do_install(
     let mut installed: Vec<serde_json::Value> = Vec::new();
 
     for (path, fm) in &skills {
-        let skill_name = resolve_skill_name(path, &fm.name);
+        let skill_name = resolve_skill_name(path, &fm.name, temp_dir);
         validate_skill_name(&skill_name)?;
 
         if !json && !quiet {
@@ -211,7 +213,7 @@ fn do_install(
         && let Ok(skills_dir) = config::skills_dir(&cfg)
     {
         for (path, fm) in &skills {
-            let skill_name = resolve_skill_name(path, &fm.name);
+            let skill_name = resolve_skill_name(path, &fm.name, temp_dir);
             // Copy skill content to repo
             let dest = skills_dir.join(&skill_name);
             let _ = copy_skill(path, &dest);
@@ -374,7 +376,15 @@ fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn resolve_skill_name(skill_path: &Path, frontmatter_name: &str) -> String {
+fn resolve_skill_name(skill_path: &Path, frontmatter_name: &str, temp_dir: Option<&Path>) -> String {
+    // When the skill is at the root of a temp clone dir, the directory name
+    // is a meaningless timestamp (e.g. "equip-1773835822037"). Use the
+    // frontmatter name instead.
+    if let Some(temp) = temp_dir {
+        if skill_path == temp {
+            return frontmatter_name.to_string();
+        }
+    }
     skill_path
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
