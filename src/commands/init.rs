@@ -180,6 +180,12 @@ fn init_git_backend(source_str: &str) -> Result<(), String> {
         }
     }
 
+    // Set a default git identity in the repo so commits work on machines
+    // without a global git config
+    let temp_repo_str = temp_repo.display().to_string();
+    let _ = run_git(&temp_repo_str, &["config", "user.name", "equip"]);
+    let _ = run_git(&temp_repo_str, &["config", "user.email", "equip@local"]);
+
     // Clone succeeded — swap temp into place
     if repo_dir.exists() {
         std::fs::remove_dir_all(&repo_dir)

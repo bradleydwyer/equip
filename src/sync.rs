@@ -11,14 +11,18 @@ pub fn pull(config: &EquipConfig) -> Result<(), String> {
             if !repo.exists() {
                 return Err("Sync repo not found. Run 'equip init' first.".to_string());
             }
+            let repo_str = repo.display().to_string();
+
+            // Reset any dirty state from a previously failed sync
+            let _ = Command::new("git")
+                .args(["-C", &repo_str, "reset", "--hard", "HEAD"])
+                .output();
+            let _ = Command::new("git")
+                .args(["-C", &repo_str, "clean", "-fd"])
+                .output();
+
             let output = Command::new("git")
-                .args([
-                    "-C",
-                    &repo.display().to_string(),
-                    "pull",
-                    "--rebase",
-                    "--quiet",
-                ])
+                .args(["-C", &repo_str, "pull", "--rebase", "--quiet"])
                 .output()
                 .map_err(|e| format!("Failed to run git pull: {e}"))?;
             if !output.status.success() {

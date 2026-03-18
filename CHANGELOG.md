@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.4
+
+- Set default git identity (`equip <equip@local>`) in the loadout repo so sync works on machines without global git config
+- Auto-reset dirty loadout repo state before pull (recovers from failed syncs)
+
 ## 0.0.3
 
 - Fix single-skill repos getting temp directory names (e.g. `equip-1773835822037`) instead of their frontmatter name

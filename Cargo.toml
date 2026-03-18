@@ -1,6 +1,6 @@
 [package]
 name = "equip"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2024"
 description = "Install SKILL.md files across AI coding agents"
 license = "MIT"
