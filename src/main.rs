@@ -136,6 +136,10 @@ enum Commands {
         /// Use a file path as sync backend (iCloud, Dropbox, etc.)
         #[arg(long)]
         path: Option<String>,
+
+        /// Git protocol to use: ssh or https (auto-detects by default, falls back on failure)
+        #[arg(long)]
+        protocol: Option<String>,
     },
 
     /// Export installed skills to sync backend or file
@@ -228,7 +232,7 @@ fn main() {
 
         Commands::Sync { output, json } => commands::sync::run(output.as_deref(), json),
 
-        Commands::Init { source, path } => commands::init::run(source.as_deref(), path.as_deref()),
+        Commands::Init { source, path, protocol } => commands::init::run(source.as_deref(), path.as_deref(), protocol.as_deref()),
 
         Commands::Export { output, json } => commands::export::run(output.as_deref(), json),
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.5
+
+- Add `--protocol ssh|https` flag to `equip init` for explicit protocol selection
+- Auto-fallback: if SSH clone fails (timeout, host key, permission), automatically retry with HTTPS (and vice versa)
+- Use direct `git clone` with constructed URLs instead of `gh repo clone` for better protocol control
+
 ## 0.0.4
 
 - Set default git identity (`equip <equip@local>`) in the loadout repo so sync works on machines without global git config

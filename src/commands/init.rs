@@ -5,9 +5,15 @@ use crate::ops;
 use crate::output;
 use crate::source::SkillSource;
 
-pub fn run(source: Option<&str>, path: Option<&str>) -> Result<(), String> {
+pub fn run(source: Option<&str>, path: Option<&str>, protocol: Option<&str>) -> Result<(), String> {
     if source.is_some() && path.is_some() {
         return Err("Provide either a GitHub repo or --path, not both.".to_string());
+    }
+
+    if let Some(p) = protocol {
+        if p != "ssh" && p != "https" {
+            return Err("--protocol must be 'ssh' or 'https'".to_string());
+        }
     }
 
     if let Some(path_str) = path {
@@ -15,12 +21,12 @@ pub fn run(source: Option<&str>, path: Option<&str>) -> Result<(), String> {
     }
 
     if let Some(source_str) = source {
-        return init_git_backend(source_str);
+        return init_git_backend(source_str, protocol);
     }
 
     // No source or path — default to <gh-user>/loadout
     let default_source = resolve_default_repo()?;
-    init_git_backend(&default_source)
+    init_git_backend(&default_source, protocol)
 }
 
 fn resolve_default_repo() -> Result<String, String> {
@@ -82,7 +88,7 @@ fn init_file_backend(path_str: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn init_git_backend(source_str: &str) -> Result<(), String> {
+fn init_git_backend(source_str: &str, protocol: Option<&str>) -> Result<(), String> {
     let source = SkillSource::parse(source_str)?;
     let repo_shorthand = match &source {
         SkillSource::GitHub { owner, repo, .. } => format!("{owner}/{repo}"),
@@ -115,62 +121,45 @@ fn init_git_backend(source_str: &str) -> Result<(), String> {
         let _ = std::fs::remove_dir_all(&temp_repo);
     }
 
-    // Use gh repo clone — respects user's configured git protocol (SSH/HTTPS)
-    let clone_result = Command::new("gh")
-        .args(["repo", "clone", &repo_shorthand])
-        .arg(&temp_repo)
-        .output()
-        .map_err(|e| format!("Failed to run gh repo clone: {e}"))?;
+    // Clone the repo, with protocol selection and auto-fallback
+    let clone_ok = clone_with_fallback(&repo_shorthand, &temp_repo, protocol)?;
 
-    if !clone_result.status.success() {
-        let stderr = String::from_utf8_lossy(&clone_result.stderr);
-
+    if !clone_ok {
         // Repo doesn't exist — create it, then clone
-        if stderr.contains("not found") || stderr.contains("Could not resolve") {
-            println!("Creating repo {}...", &repo_shorthand);
-            let create = Command::new("gh")
-                .args(["repo", "create", &repo_shorthand, "--public"])
-                .output()
-                .map_err(|e| format!("Failed to run gh repo create: {e}"))?;
+        println!("Creating repo {}...", &repo_shorthand);
+        let create = Command::new("gh")
+            .args(["repo", "create", &repo_shorthand, "--public"])
+            .output()
+            .map_err(|e| format!("Failed to run gh repo create: {e}"))?;
 
-            if !create.status.success() {
-                let _ = std::fs::remove_dir_all(&temp_repo);
-                let create_stderr = String::from_utf8_lossy(&create.stderr);
-                return Err(format!("Failed to create repo: {}", create_stderr.trim()));
-            }
-
-            // Now clone the newly created repo
-            let clone2 = Command::new("gh")
-                .args(["repo", "clone", &repo_shorthand])
-                .arg(&temp_repo)
-                .output()
-                .map_err(|e| format!("Failed to clone new repo: {e}"))?;
-
-            if !clone2.status.success() {
-                let _ = std::fs::remove_dir_all(&temp_repo);
-                let clone_stderr = String::from_utf8_lossy(&clone2.stderr);
-                return Err(format!("Failed to clone new repo: {}", clone_stderr.trim()));
-            }
-
-            // Create ops directory, README, and initial commit
-            let ops_path = temp_repo.join("ops");
-            std::fs::create_dir_all(&ops_path)
-                .map_err(|e| format!("Failed to create ops dir: {e}"))?;
-
-            std::fs::write(ops_path.join(".gitkeep"), "")
-                .map_err(|e| format!("Failed to write .gitkeep: {e}"))?;
-
-            std::fs::write(temp_repo.join("README.md"), loadout_readme(&repo_shorthand))
-                .map_err(|e| format!("Failed to write README.md: {e}"))?;
-
-            let repo_str = temp_repo.display().to_string();
-            run_git(&repo_str, &["add", "."])?;
-            run_git(&repo_str, &["commit", "-m", "init equip sync"])?;
-            run_git(&repo_str, &["push"])?;
-        } else {
+        if !create.status.success() {
             let _ = std::fs::remove_dir_all(&temp_repo);
-            return Err(format!("gh repo clone failed: {}", stderr.trim()));
+            let create_stderr = String::from_utf8_lossy(&create.stderr);
+            return Err(format!("Failed to create repo: {}", create_stderr.trim()));
         }
+
+        // Clone the newly created repo
+        let clone_ok2 = clone_with_fallback(&repo_shorthand, &temp_repo, protocol)?;
+        if !clone_ok2 {
+            let _ = std::fs::remove_dir_all(&temp_repo);
+            return Err("Failed to clone newly created repo".to_string());
+        }
+
+        // Create ops directory, README, and initial commit
+        let ops_path = temp_repo.join("ops");
+        std::fs::create_dir_all(&ops_path)
+            .map_err(|e| format!("Failed to create ops dir: {e}"))?;
+
+        std::fs::write(ops_path.join(".gitkeep"), "")
+            .map_err(|e| format!("Failed to write .gitkeep: {e}"))?;
+
+        std::fs::write(temp_repo.join("README.md"), loadout_readme(&repo_shorthand))
+            .map_err(|e| format!("Failed to write README.md: {e}"))?;
+
+        let repo_str = temp_repo.display().to_string();
+        run_git(&repo_str, &["add", "."])?;
+        run_git(&repo_str, &["commit", "-m", "init equip sync"])?;
+        run_git(&repo_str, &["push"])?;
     } else {
         // Ensure ops directory exists in the cloned repo
         let ops_path = temp_repo.join("ops");
@@ -219,6 +208,96 @@ fn init_git_backend(source_str: &str) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+/// Clone a repo with protocol selection and auto-fallback.
+/// Returns Ok(true) if clone succeeded, Ok(false) if repo not found, Err on hard failure.
+fn clone_with_fallback(
+    repo_shorthand: &str,
+    dest: &std::path::Path,
+    protocol: Option<&str>,
+) -> Result<bool, String> {
+    let ssh_url = format!("git@github.com:{repo_shorthand}.git");
+    let https_url = format!("https://github.com/{repo_shorthand}.git");
+
+    // Build list of URLs to try
+    let urls: Vec<(&str, &str)> = match protocol {
+        Some("ssh") => vec![("ssh", &ssh_url)],
+        Some("https") => vec![("https", &https_url)],
+        _ => {
+            // Auto-detect: try gh's preferred protocol first, fall back to the other
+            let gh_protocol = Command::new("gh")
+                .args(["config", "get", "git_protocol"])
+                .output()
+                .ok()
+                .and_then(|o| {
+                    if o.status.success() {
+                        Some(String::from_utf8_lossy(&o.stdout).trim().to_string())
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or_else(|| "https".to_string());
+
+            if gh_protocol == "ssh" {
+                vec![("ssh", &ssh_url), ("https", &https_url)]
+            } else {
+                vec![("https", &https_url), ("ssh", &ssh_url)]
+            }
+        }
+    };
+
+    for (proto_name, url) in &urls {
+        // Clean up any partial clone from a previous attempt
+        if dest.exists() {
+            let _ = std::fs::remove_dir_all(dest);
+        }
+
+        let result = Command::new("git")
+            .args(["clone", "--quiet", url])
+            .arg(dest)
+            .output()
+            .map_err(|e| format!("Failed to run git clone: {e}"))?;
+
+        if result.status.success() {
+            return Ok(true);
+        }
+
+        let stderr = String::from_utf8_lossy(&result.stderr);
+
+        // Repo doesn't exist — no point trying another protocol
+        if stderr.contains("not found")
+            || stderr.contains("does not exist")
+            || stderr.contains("Repository not found")
+        {
+            return Ok(false);
+        }
+
+        // Connection/auth error — try next protocol
+        if stderr.contains("timed out")
+            || stderr.contains("Connection refused")
+            || stderr.contains("Host key verification failed")
+            || stderr.contains("Permission denied")
+            || stderr.contains("Could not read from remote repository")
+        {
+            if urls.len() > 1 {
+                eprintln!(
+                    "Warning: {} clone failed, trying {}...",
+                    proto_name,
+                    if *proto_name == "ssh" { "https" } else { "ssh" }
+                );
+                continue;
+            }
+        }
+
+        // Unknown error
+        let _ = std::fs::remove_dir_all(dest);
+        return Err(format!("git clone failed ({}): {}", proto_name, stderr.trim()));
+    }
+
+    // All protocols failed
+    let _ = std::fs::remove_dir_all(dest);
+    Err("Failed to clone repo via both SSH and HTTPS".to_string())
 }
 
 fn get_remote_url(repo_dir: &std::path::Path) -> Option<String> {
