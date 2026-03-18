@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.3
+
+- Fix single-skill repos getting temp directory names (e.g. `equip-1773835822037`) instead of their frontmatter name
+- Improve VM integration test: SCP binary for fast iteration, fix credential helper, use `--all` for clean VMs
+
 ## 0.0.2
 
 - `equip install` now processes `includes` files found in the source repo, installing referenced skills automatically
