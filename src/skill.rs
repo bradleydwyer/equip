@@ -114,6 +114,18 @@ pub fn discover_skills(dir: &Path) -> Result<Vec<(std::path::PathBuf, SkillFront
     Ok(skills)
 }
 
+/// Read an includes file: one source per line, # comments, blank lines ignored
+pub fn read_includes(path: &Path) -> Result<Vec<String>, String> {
+    let content =
+        std::fs::read_to_string(path).map_err(|e| format!("Failed to read includes: {e}"))?;
+    Ok(content
+        .lines()
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty() && !l.starts_with('#'))
+        .map(String::from)
+        .collect())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

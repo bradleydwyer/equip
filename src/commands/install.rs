@@ -52,6 +52,8 @@ fn run_inner(
         source_str,
         global,
         &agents,
+        agent_ids,
+        all,
         &project_root,
         json,
         quiet,
@@ -72,6 +74,8 @@ fn do_install(
     source_str: &str,
     global: bool,
     agents: &[&agents::AgentDef],
+    agent_ids: &[String],
+    all: bool,
     project_root: &Path,
     json: bool,
     quiet: bool,
@@ -170,6 +174,34 @@ fn do_install(
                 installed.len(),
                 agents.len()
             );
+        }
+    }
+
+    // Process includes file if present in the source directory
+    let includes_path = skill_dir.join("includes");
+    if includes_path.exists() {
+        let includes = skill::read_includes(&includes_path)?;
+        if !includes.is_empty() {
+            if !json && !quiet {
+                println!("\nInstalling {} include(s)...\n", includes.len());
+            }
+            for inc_source in &includes {
+                if !json && !quiet {
+                    print!("  {} ", output::bold(inc_source));
+                }
+                match run_quiet(inc_source, global, agent_ids, all) {
+                    Ok(()) => {
+                        if !json && !quiet {
+                            println!("{}", output::green("✓"));
+                        }
+                    }
+                    Err(e) => {
+                        if !json && !quiet {
+                            eprintln!("{}", output::red(&format!("✗ {e}")));
+                        }
+                    }
+                }
+            }
         }
     }
 

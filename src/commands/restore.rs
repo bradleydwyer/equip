@@ -2,6 +2,7 @@ use crate::commands::install;
 use crate::config;
 use crate::ops;
 use crate::output;
+use crate::skill;
 use crate::sync;
 
 pub fn run(from: Option<&str>, dry_run: bool, json: bool) -> Result<(), String> {
@@ -134,7 +135,7 @@ pub fn run(from: Option<&str>, dry_run: bool, json: bool) -> Result<(), String> 
     {
         let includes_path = root.join("includes");
         if includes_path.exists() {
-            let includes = read_includes(&includes_path)?;
+            let includes = skill::read_includes(&includes_path)?;
             if !includes.is_empty() {
                 if !json && !dry_run {
                     println!("\nRestoring {} include(s)...\n", includes.len());
@@ -267,14 +268,3 @@ fn read_from_file(path: &str) -> Result<Vec<RestoreEntry>, String> {
         .collect())
 }
 
-/// Read an includes file: one source per line, # comments, blank lines ignored
-fn read_includes(path: &std::path::Path) -> Result<Vec<String>, String> {
-    let content =
-        std::fs::read_to_string(path).map_err(|e| format!("Failed to read includes: {e}"))?;
-    Ok(content
-        .lines()
-        .map(|l| l.trim())
-        .filter(|l| !l.is_empty() && !l.starts_with('#'))
-        .map(String::from)
-        .collect())
-}

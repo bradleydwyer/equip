@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.2
+
+- `equip install` now processes `includes` files found in the source repo, installing referenced skills automatically
+- Shared `read_includes` between install and restore (was duplicated in restore only)
+- Added VM integration test script (`scripts/test-vm.sh`)
+
 ## 0.0.1
 
 Fresh start. All prior versions have been removed — equip is under active development with no backwards compatibility guarantees.
