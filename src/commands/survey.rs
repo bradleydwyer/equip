@@ -1,0 +1,426 @@
+use std::collections::{BTreeMap, BTreeSet};
+use std::path::{Path, PathBuf};
+
+use crate::agents::{self, AGENTS};
+use crate::config;
+use crate::hash;
+use crate::metadata::SkillMetadata;
+use crate::output;
+use crate::skill;
+
+struct SkillInstance {
+    agent_id: &'static str,
+    agent_name: &'static str,
+    path: PathBuf,
+    scope: String, // "global", "project", or the scanned directory path
+    content_hash: u64,
+    has_metadata: bool,
+    source: Option<String>,
+}
+
+pub fn run(global: bool, json: bool, scan_path: Option<&str>) -> Result<(), String> {
+    let project_root =
+        std::env::current_dir().map_err(|e| format!("Failed to get current directory: {e}"))?;
+
+    let detected = agents::detect_agents(true, &project_root)?;
+    let detected_ids: BTreeSet<&str> = detected.iter().map(|a| a.id).collect();
+
+    let mut skills: BTreeMap<String, Vec<SkillInstance>> = BTreeMap::new();
+
+    // Resolve scan path: explicit --path, or projects_path from settings
+    let effective_scan_path = scan_path.map(String::from).or_else(|| {
+        if !global {
+            config::read_settings().ok().and_then(|s| s.projects_path)
+        } else {
+            None
+        }
+    });
+
+    if let Some(ref path) = effective_scan_path {
+        let scan_root = PathBuf::from(path)
+            .canonicalize()
+            .map_err(|e| format!("Invalid path '{}': {e}", path))?;
+        scan_directory_tree(&scan_root, &mut skills)?;
+    } else if global {
+        // Global only
+        scan_scope(&mut skills, true, &project_root, "global")?;
+    } else {
+        // Default: both project and global
+        scan_scope(&mut skills, false, &project_root, "project")?;
+        scan_scope(&mut skills, true, &project_root, "global")?;
+    }
+
+    if skills.is_empty() {
+        let scope_label = if let Some(ref p) = effective_scan_path {
+            format!("in {p}")
+        } else if global {
+            "globally".to_string()
+        } else {
+            "in this project or globally".to_string()
+        };
+        if json {
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&serde_json::json!({
+                    "action": "survey",
+                    "skills": [],
+                    "issues": [],
+                }))
+                .map_err(|e| format!("Failed to serialize JSON: {e}"))?
+            );
+        } else {
+            println!("No skills found {scope_label}.");
+        }
+        return Ok(());
+    }
+
+    let mut issues: Vec<Issue> = Vec::new();
+
+    for (name, instances) in &skills {
+        let agent_ids: BTreeSet<&str> = instances.iter().map(|i| i.agent_id).collect();
+
+        // Coverage gaps: only check when not scanning a path (path mode finds skills
+        // wherever they are, coverage gaps don't apply)
+        if effective_scan_path.is_none() && agent_ids.len() < detected_ids.len() {
+            let missing: Vec<&str> = detected_ids.difference(&agent_ids).copied().collect();
+            if !missing.is_empty() {
+                issues.push(Issue {
+                    skill: name.clone(),
+                    kind: IssueKind::CoverageGap,
+                    detail: format!(
+                        "installed in {} agent(s) but missing from: {}",
+                        agent_ids.len(),
+                        missing.join(", ")
+                    ),
+                });
+            }
+        }
+
+        // Content mismatches
+        let unique_hashes: BTreeSet<u64> = instances.iter().map(|i| i.content_hash).collect();
+        if unique_hashes.len() > 1 {
+            let groups = content_mismatch_detail(instances);
+            issues.push(Issue {
+                skill: name.clone(),
+                kind: IssueKind::ContentMismatch,
+                detail: format!("{} different versions: {}", unique_hashes.len(), groups),
+            });
+        }
+
+        // Source mismatches
+        let unique_sources: BTreeSet<&str> = instances
+            .iter()
+            .filter_map(|i| i.source.as_deref())
+            .collect();
+        if unique_sources.len() > 1 {
+            let sources_str: Vec<String> =
+                unique_sources.iter().map(|s| format!("'{s}'")).collect();
+            issues.push(Issue {
+                skill: name.clone(),
+                kind: IssueKind::SourceMismatch,
+                detail: format!(
+                    "installed from different sources: {}",
+                    sources_str.join(", ")
+                ),
+            });
+        }
+
+        // Unmanaged
+        let unmanaged: Vec<&str> = instances
+            .iter()
+            .filter(|i| !i.has_metadata)
+            .map(|i| i.agent_name)
+            .collect();
+        if !unmanaged.is_empty() {
+            issues.push(Issue {
+                skill: name.clone(),
+                kind: IssueKind::Unmanaged,
+                detail: format!(
+                    "no .equip.json in: {} (not managed by equip)",
+                    unmanaged.join(", ")
+                ),
+            });
+        }
+
+        // Orphaned (only when not in path-scan mode)
+        if effective_scan_path.is_none() {
+            let orphaned: Vec<&str> = instances
+                .iter()
+                .filter(|i| !detected_ids.contains(i.agent_id))
+                .map(|i| i.agent_name)
+                .collect();
+            if !orphaned.is_empty() {
+                issues.push(Issue {
+                    skill: name.clone(),
+                    kind: IssueKind::Orphaned,
+                    detail: format!(
+                        "exists in undetected agent(s): {} (agent may have been uninstalled)",
+                        orphaned.join(", ")
+                    ),
+                });
+            }
+        }
+    }
+
+    if json {
+        print_json(&skills, &issues)?;
+    } else {
+        print_human(
+            &skills,
+            &issues,
+            &detected_ids,
+            effective_scan_path.as_deref(),
+        );
+    }
+
+    Ok(())
+}
+
+fn scan_scope(
+    skills: &mut BTreeMap<String, Vec<SkillInstance>>,
+    global: bool,
+    project_root: &Path,
+    scope_label: &str,
+) -> Result<(), String> {
+    for agent in AGENTS {
+        let dir = agents::skill_dir(agent, global, project_root)?;
+        collect_skills_from_dir(&dir, agent, scope_label, skills);
+    }
+    Ok(())
+}
+
+fn scan_directory_tree(
+    root: &Path,
+    skills: &mut BTreeMap<String, Vec<SkillInstance>>,
+) -> Result<(), String> {
+    // Walk subdirectories of root, looking for project-level agent skill dirs
+    // e.g., ~/dev/project-a/.claude/skills/, ~/dev/project-b/.cursor/skills/
+    let entries =
+        std::fs::read_dir(root).map_err(|e| format!("Failed to read {}: {e}", root.display()))?;
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+
+        // Check if this subdirectory is itself a project with agent dirs
+        for agent in AGENTS {
+            let skill_dir = path.join(agent.project_dir);
+            if skill_dir.exists() {
+                let scope = path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| path.display().to_string());
+                collect_skills_from_dir(&skill_dir, agent, &scope, skills);
+            }
+        }
+    }
+
+    // Also check root itself as a project
+    for agent in AGENTS {
+        let skill_dir = root.join(agent.project_dir);
+        if skill_dir.exists() {
+            let scope = root
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| root.display().to_string());
+            collect_skills_from_dir(&skill_dir, agent, &scope, skills);
+        }
+    }
+
+    Ok(())
+}
+
+fn collect_skills_from_dir(
+    dir: &Path,
+    agent: &'static agents::AgentDef,
+    scope_label: &str,
+    skills: &mut BTreeMap<String, Vec<SkillInstance>>,
+) {
+    if !dir.exists() {
+        return;
+    }
+    let entries = match std::fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_dir() || !path.join("SKILL.md").exists() {
+            continue;
+        }
+        let name = entry.file_name().to_string_lossy().to_string();
+        let content_hash = hash::hash_skill_md(&path);
+        let (has_metadata, source) = match SkillMetadata::read(&path) {
+            Ok(meta) => (true, Some(meta.source)),
+            Err(_) => (false, None),
+        };
+
+        skills.entry(name).or_default().push(SkillInstance {
+            agent_id: agent.id,
+            agent_name: agent.name,
+            path,
+            scope: scope_label.to_string(),
+            content_hash,
+            has_metadata,
+            source,
+        });
+    }
+}
+
+fn print_human(
+    skills: &BTreeMap<String, Vec<SkillInstance>>,
+    issues: &[Issue],
+    detected_ids: &BTreeSet<&str>,
+    scan_path: Option<&str>,
+) {
+    let scope = if let Some(p) = scan_path {
+        format!("path: {p}")
+    } else {
+        format!("{} detected agent(s)", detected_ids.len())
+    };
+    println!("Survey: {} skill(s) across {}\n", skills.len(), scope);
+
+    for (name, instances) in skills {
+        let locations: Vec<String> = instances
+            .iter()
+            .map(|i| {
+                if scan_path.is_some() {
+                    format!("{}/{}", i.scope, i.agent_name)
+                } else {
+                    format!("{} ({})", i.agent_name, i.scope)
+                }
+            })
+            .collect();
+
+        let desc = instances
+            .first()
+            .and_then(|i| skill::read_skill(&i.path).ok())
+            .map(|fm| fm.description)
+            .unwrap_or_default();
+
+        println!(
+            "  {:<24} {}",
+            output::bold(name),
+            output::dim(&locations.join(", "))
+        );
+        if !desc.is_empty() {
+            println!("    {}", output::dim(&desc));
+        }
+    }
+
+    if issues.is_empty() {
+        println!("\n{} No issues found.", output::green("✓"));
+    } else {
+        println!(
+            "\n{} {} issue(s) found:\n",
+            output::yellow("!"),
+            issues.len()
+        );
+        for issue in issues {
+            let label = match issue.kind {
+                IssueKind::CoverageGap => "coverage gap",
+                IssueKind::ContentMismatch => "content mismatch",
+                IssueKind::SourceMismatch => "source mismatch",
+                IssueKind::Unmanaged => "unmanaged",
+                IssueKind::Orphaned => "orphaned",
+            };
+            println!(
+                "  {} [{}] {}",
+                output::bold(&issue.skill),
+                output::yellow(label),
+                issue.detail
+            );
+        }
+    }
+}
+
+fn print_json(
+    skills: &BTreeMap<String, Vec<SkillInstance>>,
+    issues: &[Issue],
+) -> Result<(), String> {
+    let skill_entries: Vec<serde_json::Value> = skills
+        .iter()
+        .map(|(name, instances)| {
+            let agents: Vec<serde_json::Value> = instances
+                .iter()
+                .map(|i| {
+                    serde_json::json!({
+                        "agent_id": i.agent_id,
+                        "agent_name": i.agent_name,
+                        "path": i.path.display().to_string(),
+                        "scope": i.scope,
+                        "content_hash": format!("{:016x}", i.content_hash),
+                        "has_metadata": i.has_metadata,
+                        "source": i.source,
+                    })
+                })
+                .collect();
+            serde_json::json!({
+                "name": name,
+                "instances": agents,
+            })
+        })
+        .collect();
+
+    let issue_entries: Vec<serde_json::Value> = issues
+        .iter()
+        .map(|i| {
+            serde_json::json!({
+                "skill": i.skill,
+                "kind": match i.kind {
+                    IssueKind::CoverageGap => "coverage_gap",
+                    IssueKind::ContentMismatch => "content_mismatch",
+                    IssueKind::SourceMismatch => "source_mismatch",
+                    IssueKind::Unmanaged => "unmanaged",
+                    IssueKind::Orphaned => "orphaned",
+                },
+                "detail": i.detail,
+            })
+        })
+        .collect();
+
+    let out = serde_json::json!({
+        "action": "survey",
+        "skills": skill_entries,
+        "issues": issue_entries,
+    });
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&out).map_err(|e| format!("Failed to serialize JSON: {e}"))?
+    );
+    Ok(())
+}
+
+fn content_mismatch_detail(instances: &[SkillInstance]) -> String {
+    let mut groups: BTreeMap<u64, Vec<String>> = BTreeMap::new();
+    for inst in instances {
+        let label = if inst.scope == "global" || inst.scope == "project" {
+            format!("{} ({})", inst.agent_name, inst.scope)
+        } else {
+            format!("{}/{}", inst.scope, inst.agent_name)
+        };
+        groups.entry(inst.content_hash).or_default().push(label);
+    }
+    groups
+        .values()
+        .map(|agents| format!("[{}]", agents.join(", ")))
+        .collect::<Vec<_>>()
+        .join(" vs ")
+}
+
+struct Issue {
+    skill: String,
+    kind: IssueKind,
+    detail: String,
+}
+
+#[derive(Clone, Copy)]
+enum IssueKind {
+    CoverageGap,
+    ContentMismatch,
+    SourceMismatch,
+    Unmanaged,
+    Orphaned,
+}

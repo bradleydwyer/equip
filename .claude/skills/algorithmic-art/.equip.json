@@ -1,0 +1,12 @@
+{
+  "source": "anthropics/skills/skills/algorithmic-art",
+  "source_type": "git",
+  "repo_url": "https://github.com/anthropics/skills",
+  "subpath": "skills/algorithmic-art",
+  "installed_at": "2026-03-17T22:15:39Z",
+  "agents": [
+    "claude",
+    "copilot"
+  ],
+  "equip_version": "1.0.0"
+}

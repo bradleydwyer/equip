@@ -1,0 +1,161 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            cross: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install cross
+        if: matrix.cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Build
+        run: |
+          if [ "${{ matrix.cross }}" = "true" ]; then
+            cross build --release --target ${{ matrix.target }}
+          else
+            cargo build --release --target ${{ matrix.target }}
+          fi
+
+      - name: Package binary
+        run: |
+          cp target/${{ matrix.target }}/release/equip equip-${{ matrix.target }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: equip-${{ matrix.target }}
+          path: equip-${{ matrix.target }}
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir release
+          for dir in artifacts/equip-*/; do
+            cp "$dir"/* release/
+          done
+          cd release
+          sha256sum equip-* > checksums-sha256.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            release/equip-*
+            release/checksums-sha256.txt
+
+  update-tap:
+    name: Update Homebrew Tap
+    needs: release
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Compute SHA256s from release assets
+        id: shas
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${TAG#v}"
+          for target in aarch64-apple-darwin x86_64-apple-darwin aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu; do
+            URL="https://github.com/bradleydwyer/equip/releases/download/${TAG}/equip-${target}"
+            curl -fsSL -o "equip-${target}" "$URL"
+            SHA=$(sha256sum "equip-${target}" | awk '{print $1}')
+            KEY=$(echo "$target" | tr '-' '_')
+            echo "${KEY}=${SHA}" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Check out tap repository
+        uses: actions/checkout@v4
+        with:
+          repository: bradleydwyer/homebrew-tap
+          token: ${{ secrets.TAP_GITHUB_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update formula
+        run: |
+          VERSION="${TAG#v}"
+          cat > homebrew-tap/Formula/equip.rb <<EOF
+          class Equip < Formula
+            desc "Install SKILL.md files across AI coding agents"
+            homepage "https://github.com/bradleydwyer/equip"
+            version "${VERSION}"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/bradleydwyer/equip/releases/download/${TAG}/equip-aarch64-apple-darwin"
+                sha256 "${{ steps.shas.outputs.aarch64_apple_darwin }}"
+              else
+                url "https://github.com/bradleydwyer/equip/releases/download/${TAG}/equip-x86_64-apple-darwin"
+                sha256 "${{ steps.shas.outputs.x86_64_apple_darwin }}"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "https://github.com/bradleydwyer/equip/releases/download/${TAG}/equip-aarch64-unknown-linux-gnu"
+                sha256 "${{ steps.shas.outputs.aarch64_unknown_linux_gnu }}"
+              else
+                url "https://github.com/bradleydwyer/equip/releases/download/${TAG}/equip-x86_64-unknown-linux-gnu"
+                sha256 "${{ steps.shas.outputs.x86_64_unknown_linux_gnu }}"
+              end
+            end
+
+            def install
+              bin.install Dir["equip*"].first => "equip"
+            end
+
+            test do
+              assert_match "equip", shell_output("#{bin}/equip --version")
+            end
+          end
+          EOF
+
+      - name: Commit and push formula update
+        run: |
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/equip.rb
+          git commit -m "Update equip to ${TAG}"
+          git push
