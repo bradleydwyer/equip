@@ -5,7 +5,7 @@ description: Manage SKILL.md files across AI coding agents using the equip CLI. 
 
 # equip: Cross-Agent Skill Manager
 
-> **Warning:** equip is under active development (v0.3.0). Expect breaking changes — there are no backwards compatibility guarantees yet.
+> **Warning:** equip is under active development (v0.3.1). Expect breaking changes — there are no backwards compatibility guarantees yet.
 
 `equip` is a CLI that installs SKILL.md files to the correct directory for every AI coding agent on the user's machine. It auto-detects which agents are present and copies skills to all of them in one command. Skills install globally by default.
 
