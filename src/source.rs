@@ -23,13 +23,22 @@ impl SkillSource {
             || source.starts_with("../")
             || source.starts_with('~')
             || source == "."
-            || (source.len() >= 3 && source.as_bytes()[1] == b':' && (source.as_bytes()[2] == b'\\' || source.as_bytes()[2] == b'/'))
+            || (source.len() >= 3
+                && source.as_bytes()[1] == b':'
+                && (source.as_bytes()[2] == b'\\' || source.as_bytes()[2] == b'/'))
         {
             let path = if let Some(rest) = source.strip_prefix('~') {
                 let home = std::env::var("HOME")
                     .or_else(|_| std::env::var("USERPROFILE"))
-                    .map_err(|_| "Could not determine home directory (HOME or USERPROFILE not set)".to_string())?;
-                PathBuf::from(home).join(rest.strip_prefix('/').or_else(|| rest.strip_prefix('\\')).unwrap_or(rest))
+                    .map_err(|_| {
+                        "Could not determine home directory (HOME or USERPROFILE not set)"
+                            .to_string()
+                    })?;
+                PathBuf::from(home).join(
+                    rest.strip_prefix('/')
+                        .or_else(|| rest.strip_prefix('\\'))
+                        .unwrap_or(rest),
+                )
             } else {
                 PathBuf::from(source)
                     .canonicalize()
