@@ -12,7 +12,8 @@ set -euo pipefail
 #   - agg installed on host (brew install agg)
 #
 # Usage:
-#   ./scripts/record-demo.sh
+#   ./scripts/record-demo.sh                  # record demo
+#   ./scripts/record-demo.sh --clean-loadout  # delete bradleydwyer/loadout first
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -20,9 +21,27 @@ DEMOS_DIR="$PROJECT_DIR/demos"
 
 VM_NAME="equip-demo"
 BASE_IMAGE="equip-base"
+CLEAN_LOADOUT=false
+
+for arg in "$@"; do
+    case "$arg" in
+        --clean-loadout) CLEAN_LOADOUT=true ;;
+    esac
+done
 
 SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 VM_IP=""
+
+# Only delete bradleydwyer/loadout if it's actually named "loadout" (not a
+# GitHub redirect from loadout-brad). Without this check, gh repo delete
+# would follow the redirect and destroy the real loadout-brad repo.
+safe_delete_loadout() {
+    local actual_name
+    actual_name=$(gh api repos/bradleydwyer/loadout --jq '.name' 2>/dev/null || echo "")
+    if [[ "$actual_name" == "loadout" ]]; then
+        gh repo delete bradleydwyer/loadout --yes 2>/dev/null || true
+    fi
+}
 
 cleanup() {
     echo ""
@@ -31,7 +50,7 @@ cleanup() {
     tart delete "$VM_NAME" 2>/dev/null || true
 
     # Delete the loadout repo created during the demo
-    gh repo delete bradleydwyer/loadout --yes 2>/dev/null || true
+    safe_delete_loadout
     echo "  Done."
 }
 trap cleanup EXIT
@@ -46,11 +65,13 @@ echo ""
 # --- Prepare output directory ---
 mkdir -p "$DEMOS_DIR"
 
-# --- Ensure loadout repo doesn't exist (clean demo) ---
-echo "==> Ensuring bradleydwyer/loadout doesn't exist..."
-gh repo delete bradleydwyer/loadout --yes 2>/dev/null || true
-echo "    Clean."
-echo ""
+# --- Optionally delete loadout repo for a clean demo ---
+if [[ "$CLEAN_LOADOUT" == true ]]; then
+    echo "==> Deleting bradleydwyer/loadout..."
+    safe_delete_loadout
+    echo "    Clean."
+    echo ""
+fi
 
 # --- Clone & start VM ---
 echo "==> Cloning VM from $BASE_IMAGE..."
@@ -68,9 +89,15 @@ for i in $(seq 1 30); do
     if ssh $SSH_OPTS -o ConnectTimeout=5 "admin@${VM_IP}" "true" 2>/dev/null; then
         break
     fi
-    sleep 2
+    sleep 1
 done
 echo "    SSH ready."
+echo ""
+
+# --- Update brew tap so we get the latest equip version ---
+echo "==> Updating brew tap..."
+run_ssh 'eval "$(/opt/homebrew/bin/brew shellenv)" && brew update --quiet'
+echo "    Updated."
 echo ""
 
 # --- Copy recording script into VM ---
@@ -79,6 +106,8 @@ cat <<'DEMO_SCRIPT' | ssh $SSH_OPTS "admin@${VM_IP}" "cat > /tmp/demo.sh && chmo
 #!/bin/bash
 eval "$(/opt/homebrew/bin/brew shellenv)"
 export HOMEBREW_NO_ENV_HINTS=1
+export HOMEBREW_NO_AUTO_UPDATE=1
+mkdir -p ~/.claude
 PROMPT="\033[32m❯\033[0m "
 
 type_cmd() {
@@ -86,9 +115,9 @@ type_cmd() {
     local cmd="$1"
     for (( i=0; i<${#cmd}; i++ )); do
         printf '%s' "${cmd:$i:1}"
-        sleep 0.04
+        sleep 0.05
     done
-    sleep 0.5
+    sleep 0.3
     echo
 }
 
@@ -100,15 +129,15 @@ sleep 1
 
 type_cmd "equip init"
 equip init 2>&1
-sleep 2
+sleep 1
 
-type_cmd "equip install anthropics/skills/pdf"
-equip install anthropics/skills/pdf 2>&1
-sleep 1.5
+type_cmd "equip install anthropics/skills/skills/frontend-design"
+equip install anthropics/skills/skills/frontend-design 2>&1
+sleep 1
 
 type_cmd "equip list"
 equip list 2>&1
-sleep 2
+sleep 1
 
 printf "$PROMPT"
 sleep 1
@@ -118,7 +147,7 @@ echo ""
 
 # --- Record ---
 echo "==> Recording session..."
-run_ssh 'eval "$(/opt/homebrew/bin/brew shellenv)" && asciinema rec /tmp/demo.cast --cols 80 --rows 24 -c "bash /tmp/demo.sh" --overwrite'
+run_ssh 'eval "$(/opt/homebrew/bin/brew shellenv)" && asciinema rec /tmp/demo.cast --cols 80 --rows 24 --idle-time-limit 1 -c "bash /tmp/demo.sh" --overwrite'
 echo "    Recorded."
 echo ""
 
