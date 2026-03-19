@@ -36,7 +36,7 @@ By default, `equip install` detects which agents are present and installs to all
 
 ```bash
 equip install anthropics/skills            # all skills from a GitHub repo (global)
-equip install anthropics/skills/pdf        # specific skill via subpath
+equip install anthropics/skills/skills/pdf  # specific skill via subpath
 equip install https://github.com/user/repo.git  # git URL
 equip install ./my-skill                   # local path
 equip install ./my-skill --local           # install to project-local scope
