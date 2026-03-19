@@ -9,6 +9,7 @@ struct InstalledSkill {
     description: String,
     agents: Vec<&'static str>,
     global: bool,
+    managed: bool,
     source: Option<String>,
 }
 
@@ -36,7 +37,9 @@ pub fn run(global: bool, json: bool, short: bool) -> Result<(), String> {
             let description = skill::read_skill(&path)
                 .map(|fm| fm.description)
                 .unwrap_or_default();
-            let source = SkillMetadata::read(&path).ok().map(|m| m.source);
+            let meta = SkillMetadata::read(&path).ok();
+            let managed = meta.is_some();
+            let source = meta.map(|m| m.source);
 
             skills
                 .entry(name)
@@ -49,6 +52,7 @@ pub fn run(global: bool, json: bool, short: bool) -> Result<(), String> {
                     description,
                     agents: vec![agent.name],
                     global,
+                    managed,
                     source,
                 });
         }
@@ -77,15 +81,48 @@ fn print_table(skills: &BTreeMap<String, InstalledSkill>, global: bool, short: b
     let scope = if global { "global" } else { "project" };
     println!("Installed skills ({scope}):\n");
 
+    let unmanaged: Vec<&String> = skills
+        .iter()
+        .filter(|(_, info)| !info.managed)
+        .map(|(name, _)| name)
+        .collect();
+
     for (name, info) in skills {
         let agents_str = format!("[{}]", info.agents.join(", "));
-        println!("  {:<28} {}", output::bold(name), output::dim(&agents_str));
+        let tag = if info.managed {
+            "".to_string()
+        } else {
+            format!(" {}", output::yellow("(unmanaged)"))
+        };
+        println!(
+            "  {:<28} {}{}",
+            output::bold(name),
+            output::dim(&agents_str),
+            tag
+        );
         if !short && !info.description.is_empty() {
             println!("    {}", output::dim(&info.description));
         }
     }
 
     println!("\n{} {} skill(s)", output::dim("Total:"), skills.len());
+
+    if !unmanaged.is_empty() {
+        println!(
+            "\n{} {} skill(s) not managed by equip: {}",
+            output::yellow("!"),
+            unmanaged.len(),
+            unmanaged
+                .iter()
+                .map(|n| output::bold(n))
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+        println!(
+            "  To manage them, reinstall with: {}",
+            output::dim("equip install <source>")
+        );
+    }
 }
 
 fn print_json(skills: &BTreeMap<String, InstalledSkill>) -> Result<(), String> {
@@ -97,6 +134,7 @@ fn print_json(skills: &BTreeMap<String, InstalledSkill>) -> Result<(), String> {
                 "description": info.description,
                 "agents": info.agents,
                 "global": info.global,
+                "managed": info.managed,
                 "source": info.source,
             })
         })

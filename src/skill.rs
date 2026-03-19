@@ -51,13 +51,42 @@ fn find_closing_fence(content: &str) -> Option<usize> {
 }
 
 fn extract_field(frontmatter: &str, field: &str) -> Option<String> {
-    for line in frontmatter.lines() {
-        let line = line.trim();
+    let lines: Vec<&str> = frontmatter.lines().collect();
+    let mut i = 0;
+    while i < lines.len() {
+        let line = lines[i].trim();
         // Match "field:" or "field :" exactly — the key must be the complete word
         if let Some(rest) = line.strip_prefix(field) {
             let rest = rest.trim_start();
             if let Some(value) = rest.strip_prefix(':') {
                 let value = value.trim();
+
+                // YAML folded (>) or literal (|) multiline scalar
+                if value == ">" || value == "|" {
+                    let folded = value == ">";
+                    let mut parts = Vec::new();
+                    i += 1;
+                    while i < lines.len() {
+                        let next = lines[i];
+                        // Continuation lines must be indented
+                        if next.starts_with(' ') || next.starts_with('\t') {
+                            parts.push(next.trim());
+                        } else {
+                            break;
+                        }
+                        i += 1;
+                    }
+                    let joined = if folded {
+                        parts.join(" ")
+                    } else {
+                        parts.join("\n")
+                    };
+                    if !joined.is_empty() {
+                        return Some(joined);
+                    }
+                    return None;
+                }
+
                 // Strip surrounding quotes if present
                 let value = value
                     .strip_prefix('"')
@@ -69,6 +98,7 @@ fn extract_field(frontmatter: &str, field: &str) -> Option<String> {
                 }
             }
         }
+        i += 1;
     }
     None
 }
@@ -203,5 +233,22 @@ mod tests {
         let fm = parse_frontmatter(content).unwrap();
         assert_eq!(fm.name, "my-skill");
         assert_eq!(fm.description, "A test skill");
+    }
+
+    #[test]
+    fn parse_folded_description() {
+        let content = "---\nname: available\ndescription: >\n  Find and check project name\n  availability across registries.\nuser-invocable: true\n---\n";
+        let fm = parse_frontmatter(content).unwrap();
+        assert_eq!(
+            fm.description,
+            "Find and check project name availability across registries."
+        );
+    }
+
+    #[test]
+    fn parse_literal_description() {
+        let content = "---\nname: my-skill\ndescription: |\n  Line one.\n  Line two.\n---\n";
+        let fm = parse_frontmatter(content).unwrap();
+        assert_eq!(fm.description, "Line one.\nLine two.");
     }
 }
