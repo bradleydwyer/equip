@@ -1,7 +1,7 @@
 # equip
 
 <p align="center">
-  <img src="logos/equip-logo-4b.png" width="256" alt="equip logo" />
+  <img src="logos/equip-banner.png" alt="equip — RPG armory banner" />
 </p>
 
 Install and sync SKILL.md files across AI coding agents and machines. One command, all your agents.
