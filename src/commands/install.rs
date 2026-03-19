@@ -125,10 +125,6 @@ fn do_install(
         let skill_name = resolve_skill_name(path, &fm.name, temp_dir);
         validate_skill_name(&skill_name)?;
 
-        if !json && !quiet {
-            print!("  {} ", output::bold(&skill_name));
-        }
-
         let mut agent_names = Vec::new();
         let mut agent_paths = Vec::new();
         for agent in agents {
@@ -177,7 +173,7 @@ fn do_install(
         }));
 
         if !json && !quiet {
-            println!("{}", output::dim(&format!("[{}]", agent_names.join(", "))));
+            println!("  {} {}", output::bold(&skill_name), output::green("✓"));
         }
     }
 
