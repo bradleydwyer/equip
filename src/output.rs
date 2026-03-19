@@ -43,7 +43,7 @@ pub struct Spinner {
     handle: Option<std::thread::JoinHandle<()>>,
 }
 
-const FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+const FRAMES: &[&str] = &["✶", "✸", "✹", "✺", "✹", "✸"];
 
 impl Spinner {
     /// Start a spinner with a label. Returns a handle to stop it.
@@ -56,7 +56,7 @@ impl Spinner {
             let mut i = 0;
             while running_clone.load(Ordering::Relaxed) {
                 let frame = FRAMES[i % FRAMES.len()];
-                print!("\r  {CYAN}{frame}{RESET} {BOLD}{label}{RESET}");
+                print!("\r  {frame} {BOLD}{label}{RESET}");
                 let _ = std::io::stdout().flush();
                 i += 1;
                 std::thread::sleep(std::time::Duration::from_millis(80));
