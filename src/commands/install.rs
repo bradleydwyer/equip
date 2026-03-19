@@ -85,10 +85,19 @@ fn do_install(
 ) -> Result<(), String> {
     let skills = skill::discover_skills(skill_dir)?;
 
+    // Resolve includes upfront so we can show total count
+    let includes_path = skill_dir.join("includes");
+    let includes = if includes_path.exists() {
+        skill::read_includes(&includes_path).unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+
+    let total = skills.len() + includes.len();
     if !json && !quiet {
         println!(
             "Found {} skill(s), installing to {} agent(s)...\n",
-            skills.len(),
+            total,
             agents.len()
         );
     }
@@ -156,6 +165,30 @@ fn do_install(
         }
     }
 
+    // Install includes as part of the same flow
+    for inc_source in &includes {
+        match run_quiet(inc_source, global, agent_ids, all) {
+            Ok(()) => {
+                if !json && !quiet {
+                    println!("  {} {}", output::bold(inc_source), output::green("✓"));
+                }
+                installed.push(serde_json::json!({
+                    "name": inc_source,
+                    "status": "installed",
+                }));
+            }
+            Err(e) => {
+                if !json && !quiet {
+                    eprintln!(
+                        "  {} {}",
+                        output::bold(inc_source),
+                        output::red(&format!("✗ {e}"))
+                    );
+                }
+            }
+        }
+    }
+
     if !quiet {
         if json {
             let out = serde_json::json!({
@@ -176,34 +209,6 @@ fn do_install(
                 installed.len(),
                 agents.len()
             );
-        }
-    }
-
-    // Process includes file if present in the source directory
-    let includes_path = skill_dir.join("includes");
-    if includes_path.exists() {
-        let includes = skill::read_includes(&includes_path)?;
-        if !includes.is_empty() {
-            if !json && !quiet {
-                println!("\nInstalling {} include(s)...\n", includes.len());
-            }
-            for inc_source in &includes {
-                if !json && !quiet {
-                    print!("  {} ", output::bold(inc_source));
-                }
-                match run_quiet(inc_source, global, agent_ids, all) {
-                    Ok(()) => {
-                        if !json && !quiet {
-                            println!("{}", output::green("✓"));
-                        }
-                    }
-                    Err(e) => {
-                        if !json && !quiet {
-                            eprintln!("{}", output::red(&format!("✗ {e}")));
-                        }
-                    }
-                }
-            }
         }
     }
 
