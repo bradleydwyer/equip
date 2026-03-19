@@ -153,29 +153,29 @@ fn do_install(
         };
         if skills.len() == 1 {
             let reg = registry::Registry::load()?;
-            if let Some(old_entry) = reg.find_unique_by_source(&scope, source_str) {
-                if old_entry.skill_name != skill_name {
-                    let old_name = old_entry.skill_name.clone();
-                    if !json && !quiet {
-                        println!(
-                            "  {} renamed → {} (removing old directories)",
-                            output::dim(&old_name),
-                            output::bold(&skill_name),
-                        );
-                    }
-                    // Remove old skill directories from all agents
-                    for agent in agents {
-                        let old_target =
-                            agents::skill_dir(agent, global, project_root)?.join(&old_name);
-                        if old_target.exists() {
-                            let _ = std::fs::remove_dir_all(&old_target);
-                        }
-                    }
-                    // Remove old registry entry
-                    let mut reg = reg;
-                    reg.remove_entry(&scope, &old_name);
-                    reg.save()?;
+            if let Some(old_entry) = reg.find_unique_by_source(&scope, source_str)
+                && old_entry.skill_name != skill_name
+            {
+                let old_name = old_entry.skill_name.clone();
+                if !json && !quiet {
+                    println!(
+                        "  {} renamed → {} (removing old directories)",
+                        output::dim(&old_name),
+                        output::bold(&skill_name),
+                    );
                 }
+                // Remove old skill directories from all agents
+                for agent in agents {
+                    let old_target =
+                        agents::skill_dir(agent, global, project_root)?.join(&old_name);
+                    if old_target.exists() {
+                        let _ = std::fs::remove_dir_all(&old_target);
+                    }
+                }
+                // Remove old registry entry
+                let mut reg = reg;
+                reg.remove_entry(&scope, &old_name);
+                reg.save()?;
             }
         }
 
