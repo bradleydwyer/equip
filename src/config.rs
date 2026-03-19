@@ -52,10 +52,32 @@ pub fn write(config: &EquipConfig) -> Result<(), String> {
 }
 
 pub fn ops_dir(config: &EquipConfig) -> Result<PathBuf, String> {
-    match config {
-        EquipConfig::Git { .. } => Ok(repo_dir()?.join("ops")),
-        EquipConfig::File { path } => Ok(PathBuf::from(path).join("ops")),
+    let root = match config {
+        EquipConfig::Git { .. } => repo_dir()?,
+        EquipConfig::File { path } => PathBuf::from(path),
+    };
+    let new_dir = root.join(".ops");
+    let old_dir = root.join("ops");
+
+    // Migrate: rename ops/ → .ops/
+    if old_dir.exists() && !new_dir.exists() {
+        std::fs::rename(&old_dir, &new_dir).map_err(|e| {
+            format!(
+                "Migration failed: could not rename {} to {}: {e}. Please rename it manually.",
+                old_dir.display(),
+                new_dir.display()
+            )
+        })?;
+    } else if old_dir.exists() && new_dir.exists() {
+        eprintln!(
+            "Warning: both {} and {} exist. Using {}. You may want to merge or remove the old directory.",
+            old_dir.display(),
+            new_dir.display(),
+            new_dir.display()
+        );
     }
+
+    Ok(new_dir)
 }
 
 pub fn backend_root(config: &EquipConfig) -> Result<PathBuf, String> {
@@ -164,8 +186,8 @@ mod tests {
             repo_url: "https://github.com/owner/repo.git".to_string(),
         };
         let dir = ops_dir(&config).unwrap();
-        // Git ops_dir should end with .equip/repo/ops
-        assert!(dir.ends_with("repo/ops"));
+        // Git ops_dir should end with .equip/repo/.ops
+        assert!(dir.ends_with("repo/.ops"));
     }
 
     #[test]
@@ -174,6 +196,6 @@ mod tests {
             path: "/tmp/my-sync".to_string(),
         };
         let dir = ops_dir(&config).unwrap();
-        assert_eq!(dir, PathBuf::from("/tmp/my-sync/ops"));
+        assert_eq!(dir, PathBuf::from("/tmp/my-sync/.ops"));
     }
 }

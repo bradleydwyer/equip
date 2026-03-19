@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0
+
+- **Breaking:** Loadout repo ops directory renamed from `ops/` to `.ops/` (hidden directory)
+- Auto-migration: existing `ops/` directories are renamed to `.ops/` on first access
+- Mark v2 sync plan doc as completed
+
 ## 0.0.6
 
 - Rename `equip sync` to `equip agents` (`sync` kept as alias)

@@ -236,7 +236,12 @@ fn main() {
             path,
             protocol,
             force,
-        } => commands::init::run(source.as_deref(), path.as_deref(), protocol.as_deref(), force),
+        } => commands::init::run(
+            source.as_deref(),
+            path.as_deref(),
+            protocol.as_deref(),
+            force,
+        ),
 
         Commands::Export { output, json } => commands::export::run(output.as_deref(), json),
 
