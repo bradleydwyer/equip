@@ -12,7 +12,7 @@ struct InstalledSkill {
     source: Option<String>,
 }
 
-pub fn run(global: bool, json: bool) -> Result<(), String> {
+pub fn run(global: bool, json: bool, short: bool) -> Result<(), String> {
     let project_root =
         std::env::current_dir().map_err(|e| format!("Failed to get current directory: {e}"))?;
 
@@ -67,20 +67,20 @@ pub fn run(global: bool, json: bool) -> Result<(), String> {
     if json {
         print_json(&skills)?;
     } else {
-        print_table(&skills, global);
+        print_table(&skills, global, short);
     }
 
     Ok(())
 }
 
-fn print_table(skills: &BTreeMap<String, InstalledSkill>, global: bool) {
+fn print_table(skills: &BTreeMap<String, InstalledSkill>, global: bool, short: bool) {
     let scope = if global { "global" } else { "project" };
     println!("Installed skills ({scope}):\n");
 
     for (name, info) in skills {
         let agents_str = format!("[{}]", info.agents.join(", "));
         println!("  {:<28} {}", output::bold(name), output::dim(&agents_str));
-        if !info.description.is_empty() {
+        if !short && !info.description.is_empty() {
             println!("    {}", output::dim(&info.description));
         }
     }

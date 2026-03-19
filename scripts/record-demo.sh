@@ -5,6 +5,7 @@ set -euo pipefail
 #
 # Uses the equip-base Tart snapshot (pre-configured with brew, gh, asciinema,
 # termsvg, node, claude code, and bradleydwyer/tap pre-tapped).
+# Equip is installed before recording starts — the demo shows usage, not setup.
 # Outputs a GIF to demos/equip-init.gif.
 #
 # Prerequisites:
@@ -94,10 +95,13 @@ done
 echo "    SSH ready."
 echo ""
 
-# --- Update brew tap so we get the latest equip version ---
-echo "==> Updating brew tap..."
-run_ssh 'eval "$(/opt/homebrew/bin/brew shellenv)" && brew update --quiet'
-echo "    Updated."
+# --- Pre-install equip (not part of the recording) ---
+echo "==> Installing equip..."
+run_ssh 'mkdir -p ~/bin'
+scp $SSH_OPTS "$PROJECT_DIR/target/release/equip" "admin@${VM_IP}:bin/equip"
+run_ssh 'chmod +x ~/bin/equip && export PATH="$HOME/bin:$PATH" && equip --version'
+run_ssh 'mkdir -p ~/.claude'
+echo "    Installed."
 echo ""
 
 # --- Copy recording script into VM ---
@@ -105,9 +109,9 @@ echo "==> Setting up recording script..."
 cat <<'DEMO_SCRIPT' | ssh $SSH_OPTS "admin@${VM_IP}" "cat > /tmp/demo.sh && chmod +x /tmp/demo.sh"
 #!/bin/bash
 eval "$(/opt/homebrew/bin/brew shellenv)"
+export PATH="$HOME/bin:$PATH"
 export HOMEBREW_NO_ENV_HINTS=1
 export HOMEBREW_NO_AUTO_UPDATE=1
-mkdir -p ~/.claude
 PROMPT="\033[32m❯\033[0m "
 
 type_cmd() {
@@ -123,10 +127,6 @@ type_cmd() {
 
 sleep 0.3
 
-type_cmd "brew install bradleydwyer/tap/equip"
-brew install bradleydwyer/tap/equip 2>&1
-sleep 1
-
 type_cmd "equip init"
 equip init 2>&1
 sleep 1
@@ -135,8 +135,16 @@ type_cmd "equip install anthropics/skills/skills/frontend-design"
 equip install anthropics/skills/skills/frontend-design 2>&1
 sleep 1
 
-type_cmd "equip list"
-equip list 2>&1
+type_cmd "equip install bradleydwyer/skills"
+equip install bradleydwyer/skills 2>&1
+sleep 1
+
+type_cmd "equip remove frontend-design"
+equip remove frontend-design 2>&1
+sleep 1
+
+type_cmd "equip list --short"
+equip list --short 2>&1
 sleep 1
 
 printf "$PROMPT"
