@@ -27,7 +27,7 @@ equip auto-detects which agents are installed: Claude Code, Codex, Gemini CLI, O
 ## Add a Skill
 
 ```bash
-equip install anthropics/skills/skills/pdf  # from GitHub
+equip install michaelneale/megamind         # from GitHub
 equip install ./my-skill                   # from a local path
 equip install ./my-skill --local           # project-local scope
 equip install ./my-skill --agent claude    # specific agent(s)
