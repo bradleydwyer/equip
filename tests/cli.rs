@@ -10,7 +10,17 @@ fn equip() -> Command {
 
 fn fixture_path(name: &str) -> String {
     let manifest = env!("CARGO_MANIFEST_DIR");
-    format!("{manifest}/tests/fixtures/{name}")
+    Path::new(manifest)
+        .join("tests")
+        .join("fixtures")
+        .join(name)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Return fixture path with backslashes escaped for embedding in JSON strings
+fn fixture_path_json(name: &str) -> String {
+    fixture_path(name).replace('\\', "\\\\")
 }
 
 /// Write an op JSON file to an ops directory
@@ -470,11 +480,11 @@ fn install_json_output() {
     assert_eq!(json["action"], "install");
     assert_eq!(json["skills"][0]["name"], "valid-skill");
     assert_eq!(json["skills"][0]["agents"][0], "Claude Code");
+    let install_path = json["skills"][0]["paths"][0].as_str().unwrap();
     assert!(
-        json["skills"][0]["paths"][0]
-            .as_str()
-            .unwrap()
-            .contains(".claude/skills/valid-skill")
+        install_path.contains(".claude")
+            && install_path.contains("skills")
+            && install_path.contains("valid-skill")
     );
 }
 
@@ -1332,7 +1342,7 @@ fn restore_from_file_backend() {
         "20260315T100000Z-add-valid-skill.json",
         &format!(
             r#"{{"op":"add","skill":"valid-skill","source":"{}","description":"test","ts":"2026-03-15T10:00:00Z"}}"#,
-            fixture_path("valid-skill")
+            fixture_path_json("valid-skill")
         ),
     );
 
@@ -1363,7 +1373,7 @@ fn restore_from_file_flag() {
         &manifest_path,
         format!(
             r#"[{{"name":"valid-skill","source":"{}"}}]"#,
-            fixture_path("valid-skill")
+            fixture_path_json("valid-skill")
         ),
     )
     .unwrap();
@@ -1400,7 +1410,7 @@ fn restore_dry_run_no_side_effects() {
         "20260315T100000Z-add-valid-skill.json",
         &format!(
             r#"{{"op":"add","skill":"valid-skill","source":"{}","description":"test","ts":"2026-03-15T10:00:00Z"}}"#,
-            fixture_path("valid-skill")
+            fixture_path_json("valid-skill")
         ),
     );
 
@@ -1461,7 +1471,7 @@ fn restore_skips_removed_skills() {
         "20260315T100000Z-add-valid-skill.json",
         &format!(
             r#"{{"op":"add","skill":"valid-skill","source":"{}","description":"test","ts":"2026-03-15T10:00:00Z"}}"#,
-            fixture_path("valid-skill")
+            fixture_path_json("valid-skill")
         ),
     );
     write_op_file(
@@ -1511,7 +1521,7 @@ fn restore_json_output() {
         &manifest_path,
         format!(
             r#"[{{"name":"valid-skill","source":"{}"}}]"#,
-            fixture_path("valid-skill")
+            fixture_path_json("valid-skill")
         ),
     )
     .unwrap();
