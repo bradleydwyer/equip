@@ -5,7 +5,7 @@ description: Manage SKILL.md files across AI coding agents using the equip CLI. 
 
 # equip: Cross-Agent Skill Manager
 
-> **Warning:** equip is under active development (v0.1.2). Expect breaking changes — there are no backwards compatibility guarantees yet.
+> **Warning:** equip is under active development (v0.3.0). Expect breaking changes — there are no backwards compatibility guarantees yet.
 
 `equip` is a CLI that installs SKILL.md files to the correct directory for every AI coding agent on the user's machine. It auto-detects which agents are present and copies skills to all of them in one command. Skills install globally by default.
 
@@ -56,10 +56,10 @@ equip remove my-skill --agent claude       # remove from specific agent
 ### List installed skills
 
 ```bash
-equip list                # global skills (default)
-equip list --short        # names only, no descriptions
+equip list                # global skills, compact view (default)
+equip list --long         # include full descriptions
 equip list --local        # project-local skills
-equip list --json         # machine-readable output (includes source field)
+equip list --json         # machine-readable output (includes source, managed fields)
 ```
 
 ### Update skills from their original source
@@ -109,7 +109,7 @@ equip survey --fix        # survey then fix interactively
 equip survey --fix --json # output a fix plan as JSON
 ```
 
-Actions: spread (copy to missing agents), align (sync mismatched versions), adopt (write .equip.json for unmanaged skills), prune (remove from undetected agents).
+Actions: spread (copy to missing agents), align (sync mismatched versions), adopt (register unmanaged skills in equip), prune (remove from undetected agents).
 
 ### Cross-machine sync
 
@@ -119,7 +119,7 @@ Sync skills across machines using a GitHub repo or cloud-synced folder. The work
 2. **Day-to-day:** `equip install` and `equip remove` auto-sync — each operation writes to the backend so the manifest stays current without manual exports
 3. **New machine:** `equip init` + `equip restore` installs everything from the backend
 
-The sync repo stores both an append-only operation log and actual skill content, so restore works offline without needing the original upstream sources.
+The sync repo stores an append-only operation log with the source for each skill. Restore re-installs from the original sources.
 
 ```bash
 # Link to a sync backend (once per machine)
