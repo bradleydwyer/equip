@@ -192,11 +192,11 @@ mod tests {
 
     #[test]
     fn parse_local_absolute() {
-        let source = SkillSource::parse("/tmp").unwrap();
+        let tmp = std::env::temp_dir();
+        let source = SkillSource::parse(tmp.to_str().unwrap()).unwrap();
         match source {
             SkillSource::Local { path } => {
-                // canonicalize resolves symlinks, so /tmp may become /private/tmp on macOS
-                assert!(path.ends_with("tmp"));
+                assert!(std::path::Path::new(&path).is_absolute());
             }
             _ => panic!("Expected Local source"),
         }
