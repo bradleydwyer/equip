@@ -144,8 +144,9 @@ pub const AGENTS: &[AgentDef] = &[
 
 pub fn home_dir() -> Result<std::path::PathBuf, String> {
     std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
         .map(std::path::PathBuf::from)
-        .map_err(|_| "HOME environment variable not set".to_string())
+        .map_err(|_| "Could not determine home directory (HOME or USERPROFILE not set)".to_string())
 }
 
 pub fn detect_agents(global: bool, project_root: &Path) -> Result<Vec<&'static AgentDef>, String> {

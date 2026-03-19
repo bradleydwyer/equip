@@ -17,17 +17,19 @@ pub enum SkillSource {
 
 impl SkillSource {
     pub fn parse(source: &str) -> Result<Self, String> {
-        // Local path: starts with /, ./, ../, or ~
+        // Local path: starts with /, ./, ../, ~, or Windows drive letter (C:\)
         if source.starts_with('/')
             || source.starts_with("./")
             || source.starts_with("../")
             || source.starts_with('~')
             || source == "."
+            || (source.len() >= 3 && source.as_bytes()[1] == b':' && (source.as_bytes()[2] == b'\\' || source.as_bytes()[2] == b'/'))
         {
             let path = if let Some(rest) = source.strip_prefix('~') {
                 let home = std::env::var("HOME")
-                    .map_err(|_| "HOME environment variable not set".to_string())?;
-                PathBuf::from(home).join(rest.strip_prefix('/').unwrap_or(rest))
+                    .or_else(|_| std::env::var("USERPROFILE"))
+                    .map_err(|_| "Could not determine home directory (HOME or USERPROFILE not set)".to_string())?;
+                PathBuf::from(home).join(rest.strip_prefix('/').or_else(|| rest.strip_prefix('\\')).unwrap_or(rest))
             } else {
                 PathBuf::from(source)
                     .canonicalize()

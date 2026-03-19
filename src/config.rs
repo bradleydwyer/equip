@@ -25,8 +25,9 @@ fn config_path() -> Result<PathBuf, String> {
 
 fn home_dir() -> Result<PathBuf, String> {
     std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
         .map(PathBuf::from)
-        .map_err(|_| "Could not determine home directory".to_string())
+        .map_err(|_| "Could not determine home directory (HOME or USERPROFILE not set)".to_string())
 }
 
 pub fn read() -> Result<Option<EquipConfig>, String> {
