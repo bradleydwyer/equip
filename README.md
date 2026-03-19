@@ -60,7 +60,7 @@ equip survey --fix                         # adopt them interactively
 ## Cross-Machine Sync
 
 ```bash
-equip init                                 # link to GitHub repo (defaults to <gh-user>/loadout)
+equip init                                 # link to GitHub repo (defaults to <gh-user>/equip-loadout)
 equip init --path ~/iCloud/equip/          # or use a file path
 
 # install/remove auto-sync after init

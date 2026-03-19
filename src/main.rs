@@ -126,9 +126,9 @@ enum Commands {
         json: bool,
     },
 
-    /// Link equip to a sync backend (GitHub repo or file path). Defaults to <gh-user>/loadout
+    /// Link equip to a sync backend (GitHub repo or file path). Defaults to <gh-user>/equip-loadout
     Init {
-        /// GitHub repo (owner/repo). Defaults to <gh-user>/loadout if omitted
+        /// GitHub repo (owner/repo). Defaults to <gh-user>/equip-loadout if omitted
         source: Option<String>,
 
         /// Use a file path as sync backend (iCloud, Dropbox, etc.)

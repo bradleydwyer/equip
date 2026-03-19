@@ -30,7 +30,7 @@ pub fn run(
         return init_git_backend(source_str, protocol, force);
     }
 
-    // No source or path — default to <gh-user>/loadout
+    // No source or path — default to <gh-user>/equip-loadout
     let default_source = resolve_default_repo()?;
     init_git_backend(&default_source, protocol, force)
 }
@@ -56,7 +56,7 @@ fn resolve_default_repo() -> Result<String, String> {
         );
     }
 
-    let repo = format!("{username}/loadout");
+    let repo = format!("{username}/equip-loadout");
     println!("Using default repo: {}", repo);
     Ok(repo)
 }

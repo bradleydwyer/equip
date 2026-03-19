@@ -123,7 +123,7 @@ The sync repo stores both an append-only operation log and actual skill content,
 
 ```bash
 # Link to a sync backend (once per machine)
-equip init                                # defaults to <gh-user>/loadout (public, created if needed)
+equip init                                # defaults to <gh-user>/equip-loadout (public, created if needed)
 equip init user/custom-repo               # use a specific GitHub repo
 equip init --path ~/iCloud/equip/         # file path (iCloud, Dropbox, NAS)
 
@@ -132,7 +132,7 @@ equip export                              # push to linked backend
 equip export --output skills.json         # export to file instead
 
 # Restore on a new machine
-equip init                                # link to loadout repo
+equip init                                # link to equip-loadout repo
 equip restore                             # install all skills from backend
 equip restore --from skills.json          # restore from file
 equip restore --dry-run                   # preview without installing
@@ -152,7 +152,7 @@ bradleydwyer/sloppy/skill
 anthropics/skills/skills/pdf
 ```
 
-`equip restore` processes includes after restoring local skills. This lets you compose your loadout from multiple repos without copying everything into one place.
+`equip restore` processes includes after restoring local skills. This lets you compose your equip-loadout from multiple repos without copying everything into one place.
 
 ### Generate AGENTS.md
 

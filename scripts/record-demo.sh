@@ -14,7 +14,7 @@ set -euo pipefail
 #
 # Usage:
 #   ./scripts/record-demo.sh                  # record demo
-#   ./scripts/record-demo.sh --clean-loadout  # delete bradleydwyer/loadout first
+#   ./scripts/record-demo.sh --clean-loadout  # delete bradleydwyer/equip-loadout first
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -33,14 +33,11 @@ done
 SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 VM_IP=""
 
-# Only delete bradleydwyer/loadout if it's actually named "loadout" (not a
-# GitHub redirect from loadout-brad). Without this check, gh repo delete
-# would follow the redirect and destroy the real loadout-brad repo.
 safe_delete_loadout() {
     local actual_name
-    actual_name=$(gh api repos/bradleydwyer/loadout --jq '.name' 2>/dev/null || echo "")
-    if [[ "$actual_name" == "loadout" ]]; then
-        gh repo delete bradleydwyer/loadout --yes 2>/dev/null || true
+    actual_name=$(gh api repos/bradleydwyer/equip-loadout --jq '.name' 2>/dev/null || echo "")
+    if [[ "$actual_name" == "equip-loadout" ]]; then
+        gh repo delete bradleydwyer/equip-loadout --yes 2>/dev/null || true
     fi
 }
 
@@ -68,7 +65,7 @@ mkdir -p "$DEMOS_DIR"
 
 # --- Optionally delete loadout repo for a clean demo ---
 if [[ "$CLEAN_LOADOUT" == true ]]; then
-    echo "==> Deleting bradleydwyer/loadout..."
+    echo "==> Deleting bradleydwyer/equip-loadout..."
     safe_delete_loadout
     echo "    Clean."
     echo ""
