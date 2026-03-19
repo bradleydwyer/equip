@@ -59,9 +59,22 @@ pub fn ops_dir(config: &EquipConfig) -> Result<PathBuf, String> {
     let new_dir = root.join(".ops");
     let old_dir = root.join("ops");
 
-    // Migrate: rename ops/ → .ops/ if old exists and new doesn't
+    // Migrate: rename ops/ → .ops/
     if old_dir.exists() && !new_dir.exists() {
-        let _ = std::fs::rename(&old_dir, &new_dir);
+        std::fs::rename(&old_dir, &new_dir).map_err(|e| {
+            format!(
+                "Migration failed: could not rename {} to {}: {e}. Please rename it manually.",
+                old_dir.display(),
+                new_dir.display()
+            )
+        })?;
+    } else if old_dir.exists() && new_dir.exists() {
+        eprintln!(
+            "Warning: both {} and {} exist. Using {}. You may want to merge or remove the old directory.",
+            old_dir.display(),
+            new_dir.display(),
+            new_dir.display()
+        );
     }
 
     Ok(new_dir)
