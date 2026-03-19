@@ -179,7 +179,19 @@ fn do_install(
 
     // Install includes as part of the same flow
     for inc_source in &includes {
-        match run_quiet(inc_source, global, agent_ids, all) {
+        let spinner = if !json && !quiet {
+            Some(output::Spinner::start(inc_source))
+        } else {
+            None
+        };
+
+        let result = run_quiet(inc_source, global, agent_ids, all);
+
+        if let Some(s) = spinner {
+            s.stop();
+        }
+
+        match result {
             Ok(()) => {
                 if !json && !quiet {
                     println!("  {} {}", output::bold(inc_source), output::green("✓"));
