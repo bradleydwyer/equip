@@ -163,6 +163,16 @@ pub fn run(global: bool, json: bool, scan_path: Option<&str>, fix: bool) -> Resu
     }
 
     if fix {
+        // Show survey results first, then enter fix mode
+        if !json {
+            print_human(
+                &skills,
+                &issues,
+                &detected_ids,
+                effective_scan_path.as_deref(),
+            );
+        }
+
         // Convert survey scan to fix scan and run fix flow
         let mut fix_skills: BTreeMap<String, Vec<super::fix::SkillInstance>> = BTreeMap::new();
         for (name, instances) in &skills {
