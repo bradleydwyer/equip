@@ -255,7 +255,7 @@ fn list_after_install() {
         .assert()
         .success()
         .stdout(predicate::str::contains("valid-skill"))
-        .stdout(predicate::str::contains("Claude Code"));
+        .stdout(predicate::str::contains("claude (1/18)"));
 }
 
 #[test]

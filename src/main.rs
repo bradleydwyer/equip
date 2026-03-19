@@ -72,9 +72,9 @@ enum Commands {
         #[arg(short, long)]
         local: bool,
 
-        /// Names only, no descriptions
-        #[arg(short, long)]
-        short: bool,
+        /// Show full descriptions
+        #[arg(long)]
+        long: bool,
 
         /// Output as JSON
         #[arg(long)]
@@ -220,7 +220,7 @@ fn main() {
             json,
         } => commands::remove::run(&name, !local, &agent, json),
 
-        Commands::List { local, short, json } => commands::list::run(!local, json, short),
+        Commands::List { local, long, json } => commands::list::run(!local, json, long),
 
         Commands::Update { name, local, json } => {
             commands::update::run(name.as_deref(), !local, json)

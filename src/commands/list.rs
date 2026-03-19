@@ -13,7 +13,7 @@ struct InstalledSkill {
     source: Option<String>,
 }
 
-pub fn run(global: bool, json: bool, short: bool) -> Result<(), String> {
+pub fn run(global: bool, json: bool, long: bool) -> Result<(), String> {
     let project_root =
         std::env::current_dir().map_err(|e| format!("Failed to get current directory: {e}"))?;
 
@@ -71,56 +71,62 @@ pub fn run(global: bool, json: bool, short: bool) -> Result<(), String> {
     if json {
         print_json(&skills)?;
     } else {
-        print_table(&skills, global, short);
+        print_table(&skills, global, long);
     }
 
     Ok(())
 }
 
-fn print_table(skills: &BTreeMap<String, InstalledSkill>, global: bool, short: bool) {
+fn print_table(skills: &BTreeMap<String, InstalledSkill>, global: bool, long: bool) {
     let scope = if global { "global" } else { "project" };
     println!("Installed skills ({scope}):\n");
 
-    let unmanaged: Vec<&String> = skills
-        .iter()
-        .filter(|(_, info)| !info.managed)
-        .map(|(name, _)| name)
-        .collect();
+    let total_agents = AGENTS.len();
+    let mut unmanaged_count = 0;
 
     for (name, info) in skills {
-        let agents_str = format!("[{}]", info.agents.join(", "));
-        let tag = if info.managed {
-            "".to_string()
+        let prefix = if info.managed {
+            output::green("✓")
         } else {
-            format!(" {}", output::yellow("(unmanaged)"))
+            unmanaged_count += 1;
+            output::yellow("?")
         };
+
+        let agents_str = if info.agents.len() == total_agents {
+            format!("all {} agents", total_agents)
+        } else {
+            let ids: Vec<&str> = info
+                .agents
+                .iter()
+                .filter_map(|name| AGENTS.iter().find(|a| a.name == *name).map(|a| a.id))
+                .collect();
+            format!("{} ({}/{})", ids.join(", "), info.agents.len(), total_agents)
+        };
+
         println!(
-            "  {:<28} {}{}",
+            "  {} {:<20} {}",
+            prefix,
             output::bold(name),
             output::dim(&agents_str),
-            tag
         );
-        if !short && !info.description.is_empty() {
+        if long && !info.description.is_empty() {
             println!("    {}", output::dim(&info.description));
         }
     }
 
+    println!(
+        "\n  {} managed   {} unmanaged",
+        output::green("✓"),
+        output::yellow("?"),
+    );
     println!("\n{} {} skill(s)", output::dim("Total:"), skills.len());
 
-    if !unmanaged.is_empty() {
+    if unmanaged_count > 0 {
         println!(
-            "\n{} {} skill(s) not managed by equip: {}",
+            "\n{} {} unmanaged skill(s). Reinstall with {} to track them.",
             output::yellow("!"),
-            unmanaged.len(),
-            unmanaged
-                .iter()
-                .map(|n| output::bold(n))
-                .collect::<Vec<_>>()
-                .join(", ")
-        );
-        println!(
-            "  To manage them, reinstall with: {}",
-            output::dim("equip install <source>")
+            unmanaged_count,
+            output::bold("equip install <source>"),
         );
     }
 }
