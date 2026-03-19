@@ -84,6 +84,7 @@ anthropics/skills/skills/pdf
 
 ```bash
 equip list                                 # list installed skills
+equip list --short                         # names only, no descriptions
 equip survey --path ~/dev                  # scan all projects for skill issues
 equip config projects_path ~/dev           # set default survey path
 equip agents                               # generate AGENTS.md

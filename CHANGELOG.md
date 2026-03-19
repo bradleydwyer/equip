@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.2
+
+- Add `equip list --short` flag for compact output (names only, no descriptions)
+- Add cycle detection for recursive `includes` files
+- Unified install output: per-skill ticks instead of agent list
+- Braille spinner for include installs
+- Guard `equip init` against unpushed changes in existing sync repo (`--force` to override)
+- Fix skill install examples in README and SKILL.md
+
+## 0.1.1
+
+- Add `equip list --short` flag for compact output (names only, no descriptions)
+- Guard `equip init` against unpushed changes in existing sync repo (`--force` to override)
+
 ## 0.1.0
 
 - **Breaking:** Loadout repo ops directory renamed from `ops/` to `.ops/` (hidden directory)
