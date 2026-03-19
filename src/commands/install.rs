@@ -6,9 +6,10 @@ use std::process::Command;
 use crate::agents;
 use crate::config;
 use crate::hash;
-use crate::metadata::{self, SkillMetadata};
+use crate::metadata;
 use crate::ops;
 use crate::output;
+use crate::registry;
 use crate::skill;
 use crate::source::SkillSource;
 use crate::sync;
@@ -144,43 +145,60 @@ fn do_install(
 
         let mut agent_names = Vec::new();
         let mut agent_paths = Vec::new();
+        let mut content_hash = None;
         for agent in agents {
             let target = agents::skill_dir(agent, global, project_root)?.join(&skill_name);
             copy_skill(path, &target)?;
 
-            let content_hash = Some(format!("{:016x}", hash::hash_skill_dir(&target)));
-            let meta = SkillMetadata {
-                source: source_str.to_string(),
-                source_type: match source {
-                    SkillSource::Local { .. } => "local".to_string(),
-                    _ => "git".to_string(),
-                },
-                repo_url: source.repo_url(),
-                subpath: source.subpath().map(String::from),
-                local_path: match source {
-                    SkillSource::Local { path } => Some(path.display().to_string()),
-                    _ => None,
-                },
-                installed_at: metadata::now_iso8601(),
-                agents: agent_ids_list.clone(),
-                equip_version: env!("CARGO_PKG_VERSION").to_string(),
-                source_commit: source_info.commit.clone(),
-                content_hash,
-                version: fm.version.clone(),
-                source_tag: source_info.tag.clone(),
-                commit_date: source_info.commit_date.clone(),
-                source_date: match source {
-                    SkillSource::Local { path } => std::fs::metadata(path.join("SKILL.md"))
-                        .and_then(|m| m.modified())
-                        .ok()
-                        .and_then(metadata::system_time_to_date),
-                    _ => None,
-                },
-            };
-            meta.write(&target)?;
+            // Delete any legacy .equip.json sidecar
+            let equip_json = target.join(".equip.json");
+            if equip_json.exists() {
+                let _ = std::fs::remove_file(&equip_json);
+            }
+
+            content_hash = Some(format!("{:016x}", hash::hash_skill_dir(&target)));
             agent_names.push(agent.name);
             agent_paths.push(target.display().to_string());
         }
+
+        // Registry upsert
+        let mut reg = registry::Registry::load()?;
+        let scope = if global {
+            registry::scope_global().to_string()
+        } else {
+            registry::scope_for_project(project_root)
+        };
+        reg.upsert(registry::RegistryEntry {
+            skill_name: skill_name.clone(),
+            scope,
+            source: source_str.to_string(),
+            source_type: match source {
+                SkillSource::Local { .. } => "local".to_string(),
+                _ => "git".to_string(),
+            },
+            repo_url: source.repo_url(),
+            subpath: source.subpath().map(String::from),
+            local_path: match source {
+                SkillSource::Local { path } => Some(path.display().to_string()),
+                _ => None,
+            },
+            installed_at: metadata::now_iso8601(),
+            agents: agent_ids_list.clone(),
+            equip_version: env!("CARGO_PKG_VERSION").to_string(),
+            source_commit: source_info.commit.clone(),
+            content_hash,
+            version: fm.version.clone(),
+            source_tag: source_info.tag.clone(),
+            commit_date: source_info.commit_date.clone(),
+            source_date: match source {
+                SkillSource::Local { path } => std::fs::metadata(path.join("SKILL.md"))
+                    .and_then(|m| m.modified())
+                    .ok()
+                    .and_then(metadata::system_time_to_date),
+                _ => None,
+            },
+        });
+        reg.save()?;
 
         installed.push(serde_json::json!({
             "name": skill_name,

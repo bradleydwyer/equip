@@ -8,6 +8,7 @@ mod hash;
 mod metadata;
 mod ops;
 mod output;
+mod registry;
 mod skill;
 mod source;
 mod sync;

@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SkillMetadata {
@@ -28,22 +27,7 @@ pub struct SkillMetadata {
     pub source_date: Option<String>,
 }
 
-impl SkillMetadata {
-    pub fn write(&self, skill_dir: &Path) -> Result<(), String> {
-        let path = skill_dir.join(".equip.json");
-        let json = serde_json::to_string_pretty(self)
-            .map_err(|e| format!("Failed to serialize metadata: {e}"))?;
-        std::fs::write(&path, json).map_err(|e| format!("Failed to write {}: {e}", path.display()))
-    }
-
-    pub fn read(skill_dir: &Path) -> Result<Self, String> {
-        let path = skill_dir.join(".equip.json");
-        let content = std::fs::read_to_string(&path)
-            .map_err(|e| format!("Failed to read {}: {e}", path.display()))?;
-        serde_json::from_str(&content)
-            .map_err(|e| format!("Failed to parse {}: {e}", path.display()))
-    }
-}
+// Note: read() and write() methods removed — metadata is now stored in the central registry.
 
 pub fn now_iso8601() -> String {
     use std::time::{SystemTime, UNIX_EPOCH};

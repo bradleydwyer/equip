@@ -34,6 +34,26 @@ pub fn run(name: &str, global: bool, agent_ids: &[String], json: bool) -> Result
         }
     }
 
+    // Update registry
+    let mut reg = crate::registry::Registry::load()?;
+    let scope = if global {
+        crate::registry::scope_global().to_string()
+    } else {
+        crate::registry::scope_for_project(&project_root)
+    };
+    if agents_to_check.len() < AGENTS.len() {
+        // Partial removal — specific agents
+        let removed_ids: Vec<String> = agents_to_check
+            .iter()
+            .filter(|a| removed.contains(&a.name))
+            .map(|a| a.id.to_string())
+            .collect();
+        reg.remove_agents(&scope, name, &removed_ids);
+    } else {
+        reg.remove_entry(&scope, name);
+    }
+    reg.save()?;
+
     if removed.is_empty() {
         let scope = if global {
             "globally"

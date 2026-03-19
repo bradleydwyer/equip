@@ -4,8 +4,9 @@ use std::path::{Path, PathBuf};
 
 use crate::agents::{self, AGENTS};
 use crate::hash;
-use crate::metadata::{self, SkillMetadata};
+use crate::metadata;
 use crate::output;
+use crate::registry;
 
 #[derive(Debug)]
 pub struct SkillInstance {
@@ -72,7 +73,7 @@ impl Action {
             Action::Align {
                 canonical_agent, ..
             } => format!("Align to {canonical_agent}'s version"),
-            Action::Adopt { .. } => "Adopt into equip (write .equip.json)".to_string(),
+            Action::Adopt { .. } => "Adopt into equip".to_string(),
             Action::Prune { .. } => "Prune from undetected agents".to_string(),
         }
     }
@@ -489,8 +490,18 @@ fn execute_action(action: &Action, global: bool, project_root: &Path) -> Result<
             }
             Ok(())
         }
-        Action::Adopt { path, .. } => {
-            let meta = SkillMetadata {
+        Action::Adopt {
+            skill_name, path, ..
+        } => {
+            let mut reg = registry::Registry::load()?;
+            let scope = if global {
+                registry::scope_global().to_string()
+            } else {
+                registry::scope_for_project(project_root)
+            };
+            reg.upsert(registry::RegistryEntry {
+                skill_name: skill_name.clone(),
+                scope,
                 source: "adopted".to_string(),
                 source_type: "local".to_string(),
                 repo_url: None,
@@ -505,8 +516,8 @@ fn execute_action(action: &Action, global: bool, project_root: &Path) -> Result<
                 source_tag: None,
                 commit_date: None,
                 source_date: None,
-            };
-            meta.write(path)
+            });
+            reg.save()
         }
         Action::Prune { path, .. } => std::fs::remove_dir_all(path)
             .map_err(|e| format!("Failed to remove {}: {e}", path.display())),

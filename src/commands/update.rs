@@ -1,43 +1,34 @@
 use std::collections::HashMap;
 use std::process::Command;
 
-use crate::agents::{self, AGENTS};
 use crate::hash;
 use crate::metadata::SkillMetadata;
 use crate::output;
+use crate::registry;
 
 pub fn run(name: Option<&str>, global: bool, json: bool) -> Result<(), String> {
     let project_root =
         std::env::current_dir().map_err(|e| format!("Failed to get current directory: {e}"))?;
 
+    let reg = registry::Registry::load()?;
+    let scope = if global {
+        registry::scope_global().to_string()
+    } else {
+        registry::scope_for_project(&project_root)
+    };
+    let entries = reg.entries_for_scope(&scope);
+
     let mut to_update: Vec<(String, std::path::PathBuf, SkillMetadata)> = Vec::new();
 
-    for agent in AGENTS {
-        let dir = agents::skill_dir(agent, global, &project_root)?;
-        if !dir.exists() {
-            continue;
+    for entry in entries {
+        if let Some(target) = name {
+            if entry.skill_name != target {
+                continue;
+            }
         }
-        let entries = match std::fs::read_dir(&dir) {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            let skill_name = entry.file_name().to_string_lossy().to_string();
 
-            if let Some(target) = name
-                && skill_name != target
-            {
-                continue;
-            }
-
-            if to_update.iter().any(|(n, _, _)| n == &skill_name) {
-                continue;
-            }
-
-            if let Ok(meta) = SkillMetadata::read(&path) {
-                to_update.push((skill_name, path, meta));
-            }
+        if let Some(path) = registry::find_skill_path(&entry.skill_name, global, &project_root) {
+            to_update.push((entry.skill_name.clone(), path, entry.as_metadata()));
         }
     }
 

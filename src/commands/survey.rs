@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 use crate::agents::{self, AGENTS};
 use crate::config;
 use crate::hash;
-use crate::metadata::SkillMetadata;
 use crate::output;
+use crate::registry;
 use crate::skill;
 
 struct SkillInstance {
@@ -25,6 +25,7 @@ pub fn run(global: bool, json: bool, scan_path: Option<&str>, fix: bool) -> Resu
     let detected = agents::detect_agents(true, &project_root)?;
     let detected_ids: BTreeSet<&str> = detected.iter().map(|a| a.id).collect();
 
+    let reg = registry::Registry::load()?;
     let mut skills: BTreeMap<String, Vec<SkillInstance>> = BTreeMap::new();
 
     // Resolve scan path: explicit --path, or projects_path from settings
@@ -40,14 +41,15 @@ pub fn run(global: bool, json: bool, scan_path: Option<&str>, fix: bool) -> Resu
         let scan_root = PathBuf::from(path)
             .canonicalize()
             .map_err(|e| format!("Invalid path '{}': {e}", path))?;
-        scan_directory_tree(&scan_root, &mut skills)?;
+        scan_directory_tree(&scan_root, &mut skills, &reg)?;
     } else if global {
         // Global only
-        scan_scope(&mut skills, true, &project_root, "global")?;
+        scan_scope(&mut skills, true, &project_root, "global", &reg)?;
     } else {
         // Default: both project and global
-        scan_scope(&mut skills, false, &project_root, "project")?;
-        scan_scope(&mut skills, true, &project_root, "global")?;
+        let project_scope = registry::scope_for_project(&project_root);
+        scan_scope_with_registry_key(&mut skills, false, &project_root, "project", &reg, &project_scope)?;
+        scan_scope(&mut skills, true, &project_root, "global", &reg)?;
     }
 
     if skills.is_empty() {
@@ -136,7 +138,7 @@ pub fn run(global: bool, json: bool, scan_path: Option<&str>, fix: bool) -> Resu
                 skill: name.clone(),
                 kind: IssueKind::Unmanaged,
                 detail: format!(
-                    "no .equip.json in: {} (not managed by equip)",
+                    "not tracked in registry: {} (not managed by equip)",
                     unmanaged.join(", ")
                 ),
             });
@@ -234,10 +236,31 @@ fn scan_scope(
     global: bool,
     project_root: &Path,
     scope_label: &str,
+    reg: &registry::Registry,
+) -> Result<(), String> {
+    let registry_scope = if global {
+        registry::scope_global().to_string()
+    } else {
+        registry::scope_for_project(project_root)
+    };
+    for agent in AGENTS {
+        let dir = agents::skill_dir(agent, global, project_root)?;
+        collect_skills_from_dir(&dir, agent, scope_label, skills, reg, &registry_scope);
+    }
+    Ok(())
+}
+
+fn scan_scope_with_registry_key(
+    skills: &mut BTreeMap<String, Vec<SkillInstance>>,
+    global: bool,
+    project_root: &Path,
+    scope_label: &str,
+    reg: &registry::Registry,
+    registry_scope: &str,
 ) -> Result<(), String> {
     for agent in AGENTS {
         let dir = agents::skill_dir(agent, global, project_root)?;
-        collect_skills_from_dir(&dir, agent, scope_label, skills);
+        collect_skills_from_dir(&dir, agent, scope_label, skills, reg, registry_scope);
     }
     Ok(())
 }
@@ -245,6 +268,7 @@ fn scan_scope(
 fn scan_directory_tree(
     root: &Path,
     skills: &mut BTreeMap<String, Vec<SkillInstance>>,
+    reg: &registry::Registry,
 ) -> Result<(), String> {
     // Walk subdirectories of root, looking for project-level agent skill dirs
     // e.g., ~/dev/project-a/.claude/skills/, ~/dev/project-b/.cursor/skills/
@@ -257,6 +281,12 @@ fn scan_directory_tree(
             continue;
         }
 
+        let registry_scope = path
+            .canonicalize()
+            .unwrap_or_else(|_| path.clone())
+            .display()
+            .to_string();
+
         // Check if this subdirectory is itself a project with agent dirs
         for agent in AGENTS {
             let skill_dir = path.join(agent.project_dir);
@@ -265,12 +295,17 @@ fn scan_directory_tree(
                     .file_name()
                     .map(|n| n.to_string_lossy().to_string())
                     .unwrap_or_else(|| path.display().to_string());
-                collect_skills_from_dir(&skill_dir, agent, &scope, skills);
+                collect_skills_from_dir(&skill_dir, agent, &scope, skills, reg, &registry_scope);
             }
         }
     }
 
     // Also check root itself as a project
+    let root_registry_scope = root
+        .canonicalize()
+        .unwrap_or_else(|_| root.to_path_buf())
+        .display()
+        .to_string();
     for agent in AGENTS {
         let skill_dir = root.join(agent.project_dir);
         if skill_dir.exists() {
@@ -278,7 +313,7 @@ fn scan_directory_tree(
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_else(|| root.display().to_string());
-            collect_skills_from_dir(&skill_dir, agent, &scope, skills);
+            collect_skills_from_dir(&skill_dir, agent, &scope, skills, reg, &root_registry_scope);
         }
     }
 
@@ -290,6 +325,8 @@ fn collect_skills_from_dir(
     agent: &'static agents::AgentDef,
     scope_label: &str,
     skills: &mut BTreeMap<String, Vec<SkillInstance>>,
+    reg: &registry::Registry,
+    registry_scope: &str,
 ) {
     if !dir.exists() {
         return;
@@ -305,10 +342,16 @@ fn collect_skills_from_dir(
         }
         let name = entry.file_name().to_string_lossy().to_string();
         let content_hash = hash::hash_skill_md(&path);
-        let (has_metadata, source) = match SkillMetadata::read(&path) {
-            Ok(meta) => (true, Some(meta.source)),
-            Err(_) => (false, None),
-        };
+
+        // Delete any legacy .equip.json sidecar
+        let equip_json = path.join(".equip.json");
+        if equip_json.exists() {
+            let _ = std::fs::remove_file(&equip_json);
+        }
+
+        let reg_entry = reg.get(registry_scope, &name);
+        let has_metadata = reg_entry.is_some();
+        let source = reg_entry.map(|e| e.source.clone());
 
         skills.entry(name).or_default().push(SkillInstance {
             agent_id: agent.id,

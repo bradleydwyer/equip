@@ -2,9 +2,9 @@ use std::path::Path;
 
 use crate::agents::{self, AGENTS};
 use crate::config;
-use crate::metadata::SkillMetadata;
 use crate::ops;
 use crate::output;
+use crate::registry;
 use crate::skill;
 use crate::sync;
 
@@ -98,6 +98,7 @@ struct InstalledSkill {
 }
 
 fn scan_installed_skills(project_root: &std::path::Path) -> Result<Vec<InstalledSkill>, String> {
+    let reg = registry::Registry::load()?;
     let mut seen = std::collections::BTreeMap::new();
 
     for agent in AGENTS {
@@ -121,7 +122,7 @@ fn scan_installed_skills(project_root: &std::path::Path) -> Result<Vec<Installed
             let description = skill::read_skill(&path)
                 .map(|fm| fm.description)
                 .unwrap_or_default();
-            let source = SkillMetadata::read(&path).ok().map(|m| m.source);
+            let source = reg.get(registry::scope_global(), &name).map(|e| e.source.clone());
             seen.insert(
                 name.clone(),
                 InstalledSkill {

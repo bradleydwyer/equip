@@ -2,9 +2,9 @@ use std::collections::BTreeSet;
 
 use crate::agents::{self, AGENTS};
 use crate::config;
-use crate::metadata::SkillMetadata;
 use crate::ops;
 use crate::output;
+use crate::registry;
 use crate::sync;
 
 pub fn run(json: bool) -> Result<(), String> {
@@ -38,6 +38,7 @@ pub fn run(json: bool) -> Result<(), String> {
         std::env::current_dir().map_err(|e| format!("Failed to get current directory: {e}"))?;
 
     // Scan installed global skills
+    let reg = registry::Registry::load()?;
     let mut installed: std::collections::BTreeMap<String, Option<String>> =
         std::collections::BTreeMap::new();
     for agent in AGENTS {
@@ -56,8 +57,8 @@ pub fn run(json: bool) -> Result<(), String> {
             }
             let name = entry.file_name().to_string_lossy().to_string();
             installed
-                .entry(name)
-                .or_insert_with(|| SkillMetadata::read(&path).ok().map(|m| m.source));
+                .entry(name.clone())
+                .or_insert_with(|| reg.get(registry::scope_global(), &name).map(|e| e.source.clone()));
         }
     }
 

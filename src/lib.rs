@@ -5,6 +5,7 @@ pub mod hash;
 pub mod metadata;
 pub mod ops;
 pub mod output;
+pub mod registry;
 pub mod skill;
 pub mod source;
 pub mod sync;

@@ -82,13 +82,19 @@ fn install_single_skill() {
     // Verify files were created
     let skill_dir = project.path().join(".claude/skills/valid-skill");
     assert!(skill_dir.join("SKILL.md").exists());
-    assert!(skill_dir.join(".equip.json").exists());
+    // No .equip.json sidecar — metadata is in central registry
+    assert!(!skill_dir.join(".equip.json").exists());
 
-    // Verify metadata
-    let meta: serde_json::Value =
-        serde_json::from_str(&fs::read_to_string(skill_dir.join(".equip.json")).unwrap()).unwrap();
-    assert_eq!(meta["source_type"], "local");
-    assert_eq!(meta["agents"][0], "claude");
+    // Verify registry entry
+    let registry_path = home.path().join(".equip/registry.json");
+    assert!(registry_path.exists());
+    let registry: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&registry_path).unwrap()).unwrap();
+    let entries = registry["entries"].as_object().unwrap();
+    // For --local install, the scope is the project path
+    let entry = entries.values().next().unwrap();
+    assert_eq!(entry["source_type"], "local");
+    assert!(entry["agents"].as_array().unwrap().iter().any(|a| a == "claude"));
 }
 
 #[test]
@@ -1828,8 +1834,8 @@ fn install_no_sync_when_no_backend() {
         .assert()
         .success();
 
-    // No .equip dir should exist
-    assert!(!home.path().join(".equip").exists());
+    // .equip dir exists (for registry.json) but no config.json
+    assert!(!home.path().join(".equip/config.json").exists());
 }
 
 #[test]

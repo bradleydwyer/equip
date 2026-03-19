@@ -53,6 +53,7 @@ fn collect_files(base: &Path, dir: &Path, out: &mut Vec<(String, Vec<u8>)>) -> R
         let name = entry.file_name();
         let name_str = name.to_string_lossy();
 
+        // Legacy: skip .equip.json sidecar files if present
         if name_str == ".git" || name_str == ".equip.json" {
             continue;
         }

@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use crate::agents::{self, AGENTS};
-use crate::metadata::SkillMetadata;
 use crate::output;
+use crate::registry;
 use crate::skill;
 
 struct InstalledSkill {
@@ -16,6 +16,13 @@ struct InstalledSkill {
 pub fn run(global: bool, json: bool, long: bool) -> Result<(), String> {
     let project_root =
         std::env::current_dir().map_err(|e| format!("Failed to get current directory: {e}"))?;
+
+    let reg = registry::Registry::load()?;
+    let scope = if global {
+        registry::scope_global().to_string()
+    } else {
+        registry::scope_for_project(&project_root)
+    };
 
     let mut skills: BTreeMap<String, InstalledSkill> = BTreeMap::new();
 
@@ -37,9 +44,16 @@ pub fn run(global: bool, json: bool, long: bool) -> Result<(), String> {
             let description = skill::read_skill(&path)
                 .map(|fm| fm.description)
                 .unwrap_or_default();
-            let meta = SkillMetadata::read(&path).ok();
-            let managed = meta.is_some();
-            let source = meta.map(|m| m.source);
+
+            // Delete any legacy .equip.json sidecar
+            let equip_json = path.join(".equip.json");
+            if equip_json.exists() {
+                let _ = std::fs::remove_file(&equip_json);
+            }
+
+            let reg_entry = reg.get(&scope, &name);
+            let managed = reg_entry.is_some();
+            let source = reg_entry.map(|e| e.source.clone());
 
             skills
                 .entry(name)
