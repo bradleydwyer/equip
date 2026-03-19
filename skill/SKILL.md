@@ -68,7 +68,7 @@ equip update              # update all installed skills
 equip update my-skill     # update a specific skill
 ```
 
-Warns if local changes will be overwritten.
+Skips up-to-date skills. Warns if local changes will be overwritten.
 
 ### Check for outdated skills
 
@@ -101,11 +101,11 @@ If `projects_path` is configured (see `equip config`), `equip survey` without `-
 
 ### Fix issues
 
-Interactive TUI that walks through survey issues and offers to fix them:
+Add `--fix` to survey to interactively resolve issues:
 
 ```bash
-equip fix                 # interactive mode with grouped actions
-equip fix --json          # output a fix plan as JSON
+equip survey --fix        # survey then fix interactively
+equip survey --fix --json # output a fix plan as JSON
 ```
 
 Actions: spread (copy to missing agents), align (sync mismatched versions), adopt (write .equip.json for unmanaged skills), prune (remove from undetected agents).
@@ -156,8 +156,8 @@ anthropics/skills/skills/pdf
 ### Generate AGENTS.md
 
 ```bash
-equip sync                        # writes AGENTS.md from project-local skills
-equip sync --output SKILLS.md     # custom output path
+equip agents                      # writes AGENTS.md from project-local skills
+equip agents --output SKILLS.md   # custom output path
 ```
 
 ### Configuration
@@ -254,7 +254,7 @@ equip survey --json
 ### Fix
 
 ```bash
-equip fix --json
+equip survey --fix --json
 ```
 ```json
 {

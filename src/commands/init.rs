@@ -5,15 +5,16 @@ use crate::ops;
 use crate::output;
 use crate::source::SkillSource;
 
-pub fn run(source: Option<&str>, path: Option<&str>, protocol: Option<&str>) -> Result<(), String> {
+pub fn run(source: Option<&str>, path: Option<&str>, protocol: Option<&str>, force: bool) -> Result<(), String> {
     if source.is_some() && path.is_some() {
         return Err("Provide either a GitHub repo or --path, not both.".to_string());
     }
 
-    if let Some(p) = protocol {
-        if p != "ssh" && p != "https" {
-            return Err("--protocol must be 'ssh' or 'https'".to_string());
-        }
+    if let Some(p) = protocol
+        && p != "ssh"
+        && p != "https"
+    {
+        return Err("--protocol must be 'ssh' or 'https'".to_string());
     }
 
     if let Some(path_str) = path {
@@ -21,12 +22,12 @@ pub fn run(source: Option<&str>, path: Option<&str>, protocol: Option<&str>) -> 
     }
 
     if let Some(source_str) = source {
-        return init_git_backend(source_str, protocol);
+        return init_git_backend(source_str, protocol, force);
     }
 
     // No source or path — default to <gh-user>/loadout
     let default_source = resolve_default_repo()?;
-    init_git_backend(&default_source, protocol)
+    init_git_backend(&default_source, protocol, force)
 }
 
 fn resolve_default_repo() -> Result<String, String> {
@@ -88,7 +89,7 @@ fn init_file_backend(path_str: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn init_git_backend(source_str: &str, protocol: Option<&str>) -> Result<(), String> {
+fn init_git_backend(source_str: &str, protocol: Option<&str>, force: bool) -> Result<(), String> {
     let source = SkillSource::parse(source_str)?;
     let repo_shorthand = match &source {
         SkillSource::GitHub { owner, repo, .. } => format!("{owner}/{repo}"),
@@ -114,6 +115,17 @@ fn init_git_backend(source_str: &str, protocol: Option<&str>) -> Result<(), Stri
     let equip_dir = config::equip_dir()?;
     std::fs::create_dir_all(&equip_dir)
         .map_err(|e| format!("Failed to create {}: {e}", equip_dir.display()))?;
+
+    // Check for unpushed changes in existing repo before replacing it
+    if repo_dir.exists() && !force {
+        let repo_str = repo_dir.display().to_string();
+        if has_unpushed_changes(&repo_str) {
+            return Err(
+                "Existing sync repo has unpushed changes. Run 'equip export' first, or re-run with --force to discard them."
+                    .to_string(),
+            );
+        }
+    }
 
     // Clone to a temp dir first so we don't destroy the existing repo on failure
     let temp_repo = equip_dir.join("repo.tmp");
@@ -147,8 +159,7 @@ fn init_git_backend(source_str: &str, protocol: Option<&str>) -> Result<(), Stri
 
         // Create ops directory, README, and initial commit
         let ops_path = temp_repo.join("ops");
-        std::fs::create_dir_all(&ops_path)
-            .map_err(|e| format!("Failed to create ops dir: {e}"))?;
+        std::fs::create_dir_all(&ops_path).map_err(|e| format!("Failed to create ops dir: {e}"))?;
 
         std::fs::write(ops_path.join(".gitkeep"), "")
             .map_err(|e| format!("Failed to write .gitkeep: {e}"))?;
@@ -274,25 +285,28 @@ fn clone_with_fallback(
         }
 
         // Connection/auth error — try next protocol
-        if stderr.contains("timed out")
+        if (stderr.contains("timed out")
             || stderr.contains("Connection refused")
             || stderr.contains("Host key verification failed")
             || stderr.contains("Permission denied")
-            || stderr.contains("Could not read from remote repository")
+            || stderr.contains("Could not read from remote repository"))
+            && urls.len() > 1
         {
-            if urls.len() > 1 {
-                eprintln!(
-                    "Warning: {} clone failed, trying {}...",
-                    proto_name,
-                    if *proto_name == "ssh" { "https" } else { "ssh" }
-                );
-                continue;
-            }
+            eprintln!(
+                "Warning: {} clone failed, trying {}...",
+                proto_name,
+                if *proto_name == "ssh" { "https" } else { "ssh" }
+            );
+            continue;
         }
 
         // Unknown error
         let _ = std::fs::remove_dir_all(dest);
-        return Err(format!("git clone failed ({}): {}", proto_name, stderr.trim()));
+        return Err(format!(
+            "git clone failed ({}): {}",
+            proto_name,
+            stderr.trim()
+        ));
     }
 
     // All protocols failed
@@ -343,6 +357,36 @@ equip update                      # update all skills
 ```
 "#
     )
+}
+
+/// Check if the local repo has uncommitted changes or unpushed commits.
+fn has_unpushed_changes(repo_dir: &str) -> bool {
+    // Check for uncommitted changes (unstaged + staged + untracked)
+    let dirty = Command::new("git")
+        .args(["-C", repo_dir, "status", "--porcelain"])
+        .output()
+        .ok()
+        .is_some_and(|o| !String::from_utf8_lossy(&o.stdout).trim().is_empty());
+
+    if dirty {
+        return true;
+    }
+
+    // Check for commits ahead of remote
+    let ahead = Command::new("git")
+        .args(["-C", repo_dir, "rev-list", "--count", "@{u}..HEAD"])
+        .output()
+        .ok()
+        .and_then(|o| {
+            if o.status.success() {
+                String::from_utf8_lossy(&o.stdout).trim().parse::<u32>().ok()
+            } else {
+                None
+            }
+        })
+        .unwrap_or(0);
+
+    ahead > 0
 }
 
 fn run_git(repo_dir: &str, args: &[&str]) -> Result<(), String> {
