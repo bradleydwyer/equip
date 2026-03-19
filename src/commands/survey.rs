@@ -385,31 +385,50 @@ fn print_human(
     };
     println!("Survey: {} skill(s) across {}\n", skills.len(), scope);
 
-    for (name, instances) in skills {
-        let locations: Vec<String> = instances
+    // Check if all skills share the same agent distribution
+    let all_same = skills.len() > 1 && {
+        let first_set: BTreeSet<(&str, &str)> = skills
+            .values()
+            .next()
+            .unwrap()
             .iter()
-            .map(|i| {
-                if scan_path.is_some() {
-                    format!("{}/{}", i.scope, i.agent_name)
-                } else {
-                    format!("{} ({})", i.agent_name, i.scope)
-                }
-            })
+            .map(|i| (i.agent_id, i.scope.as_str()))
             .collect();
+        skills.values().skip(1).all(|insts| {
+            let set: BTreeSet<(&str, &str)> =
+                insts.iter().map(|i| (i.agent_id, i.scope.as_str())).collect();
+            set == first_set
+        })
+    };
 
+    if all_same {
+        let common = format_locations(skills.values().next().unwrap(), detected_ids, scan_path);
+        println!("All skills installed in: {}\n", output::dim(&common));
+    }
+
+    for (name, instances) in skills {
         let desc = instances
             .first()
             .and_then(|i| skill::read_skill(&i.path).ok())
-            .map(|fm| fm.description)
+            .map(|fm| truncate_description(&fm.description))
             .unwrap_or_default();
 
-        println!(
-            "  {:<24} {}",
-            output::bold(name),
-            output::dim(&locations.join(", "))
-        );
-        if !desc.is_empty() {
-            println!("    {}", output::dim(&desc));
+        if all_same {
+            if desc.is_empty() {
+                println!("  {}", output::bold(name));
+            } else {
+                println!("  {:<24} {}", output::bold(name), output::dim(&desc));
+            }
+        } else {
+            let locations = format_locations(instances, detected_ids, scan_path);
+            println!(
+                "  {:<24} {}",
+                output::bold(name),
+                output::dim(&locations)
+            );
+            if !desc.is_empty() {
+                println!("    {}", output::dim(&desc));
+            }
         }
     }
 
@@ -436,6 +455,63 @@ fn print_human(
                 issue.detail
             );
         }
+    }
+}
+
+fn format_locations(
+    instances: &[SkillInstance],
+    detected_ids: &BTreeSet<&str>,
+    scan_path: Option<&str>,
+) -> String {
+    if scan_path.is_some() {
+        let locations: Vec<String> = instances
+            .iter()
+            .map(|i| format!("{}/{}", i.scope, i.agent_name))
+            .collect();
+        return locations.join(", ");
+    }
+
+    let detected_count = detected_ids.len();
+
+    // Group by scope
+    let mut by_scope: BTreeMap<&str, Vec<&SkillInstance>> = BTreeMap::new();
+    for i in instances {
+        by_scope.entry(i.scope.as_str()).or_default().push(i);
+    }
+
+    let parts: Vec<String> = by_scope
+        .iter()
+        .map(|(scope, insts)| {
+            let inst_ids: BTreeSet<&str> = insts.iter().map(|i| i.agent_id).collect();
+            let covers_all =
+                detected_count > 0 && detected_ids.iter().all(|id| inst_ids.contains(id));
+
+            if covers_all {
+                format!("all {} agents ({})", detected_count, scope)
+            } else if insts.len() > 5 {
+                let detected_here = insts
+                    .iter()
+                    .filter(|i| detected_ids.contains(i.agent_id))
+                    .count();
+                format!("{}/{} agents ({})", detected_here, detected_count, scope)
+            } else {
+                insts
+                    .iter()
+                    .map(|i| format!("{} ({})", i.agent_name, scope))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            }
+        })
+        .collect();
+
+    parts.join(", ")
+}
+
+pub fn truncate_description(desc: &str) -> String {
+    if let Some(pos) = desc.find(". ") {
+        format!("{}.", &desc[..pos])
+    } else {
+        desc.to_string()
     }
 }
 

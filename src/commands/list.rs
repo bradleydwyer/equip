@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::agents::{self, AGENTS};
+use crate::commands::survey::truncate_description;
 use crate::output;
 use crate::registry;
 use crate::skill;
@@ -126,14 +127,41 @@ fn print_table(skills: &BTreeMap<String, InstalledSkill>, global: bool, long: bo
 
         // Pad raw name then apply bold, so ANSI codes don't break alignment
         let padded = format!("{:<width$}", name, width = col_width);
-        println!(
-            "  {} {} {}",
-            prefix,
-            output::bold(&padded),
-            output::dim(&agents_str),
-        );
-        if long && !info.description.is_empty() {
-            println!("    {}", output::dim(&info.description));
+
+        let desc = if !info.description.is_empty() {
+            if long {
+                info.description.clone()
+            } else {
+                truncate_description(&info.description)
+            }
+        } else {
+            String::new()
+        };
+
+        let is_all_agents = info.agents.len() == total_agents;
+
+        if desc.is_empty() {
+            println!(
+                "  {} {} {}",
+                prefix,
+                output::bold(&padded),
+                output::dim(&agents_str),
+            );
+        } else if is_all_agents {
+            println!(
+                "  {} {} {}",
+                prefix,
+                output::bold(&padded),
+                output::dim(&desc),
+            );
+        } else {
+            println!(
+                "  {} {} {}  {}",
+                prefix,
+                output::bold(&padded),
+                output::dim(&desc),
+                output::dim(&agents_str),
+            );
         }
     }
 
