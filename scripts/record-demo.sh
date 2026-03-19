@@ -131,16 +131,16 @@ type_cmd "equip init"
 equip init 2>&1
 sleep 1
 
-type_cmd "equip install anthropics/skills/skills/frontend-design"
-equip install anthropics/skills/skills/frontend-design 2>&1
+type_cmd "equip install michaelneale/megamind"
+equip install michaelneale/megamind 2>&1
 sleep 1
 
 type_cmd "equip install bradleydwyer/skills"
 equip install bradleydwyer/skills 2>&1
 sleep 1
 
-type_cmd "equip remove frontend-design"
-equip remove frontend-design 2>&1
+type_cmd "equip remove megamind"
+equip remove megamind 2>&1
 sleep 1
 
 type_cmd "equip list --short"
