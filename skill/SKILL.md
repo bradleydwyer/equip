@@ -1,6 +1,6 @@
 ---
 name: equip
-description: Manage SKILL.md files across AI coding agents using the equip CLI. Use this skill whenever the user wants to install, uninstall, list, update, check for outdated skills, survey, fix, sync, export, restore, configure, or check status of skills from GitHub repos, git URLs, or local paths. Also trigger when the user asks about managing skills across multiple agents or machines, wants to see what skills are installed, needs to find skill sprawl or duplicates, wants to check if skills are up to date, or needs to sync skills to a new machine. If the user mentions "equip" by name, this skill definitely applies.
+description: Manage SKILL.md files across AI coding agents using the equip CLI. Use this skill whenever the user wants to install, uninstall, list, update, edit, check for outdated skills, survey, fix, sync, export, restore, configure, or check status of skills from GitHub repos, git URLs, or local paths. Also trigger when the user asks about managing skills across multiple agents or machines, wants to see what skills are installed, needs to find skill sprawl or duplicates, wants to check if skills are up to date, needs to sync skills to a new machine, or wants to edit or update the contents of a skill's SKILL.md file. If the user mentions "equip" by name, this skill definitely applies.
 ---
 
 # equip: Cross-Agent Skill Manager
@@ -8,6 +8,16 @@ description: Manage SKILL.md files across AI coding agents using the equip CLI. 
 > **Warning:** equip is under active development (v0.3.1). Expect breaking changes — there are no backwards compatibility guarantees yet.
 
 `equip` is a CLI that installs SKILL.md files to the correct directory for every AI coding agent on the user's machine. It auto-detects which agents are present and copies skills to all of them in one command. Skills install globally by default.
+
+## Editing Skills
+
+**NEVER edit installed skill copies directly** (e.g. `~/.claude/skills/foo/SKILL.md`). These are managed by equip and will be overwritten on update. Instead:
+
+1. Find the skill's source repo — check `equip list --json` for the `source` field
+2. Edit the SKILL.md in the **source repo**
+3. Commit, push, and run `equip update <skill-name>` to distribute the change
+
+For this skill specifically, the source is `bradleydwyer/equip/skill`.
 
 ## Installation
 
