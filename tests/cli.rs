@@ -104,6 +104,82 @@ fn install_single_skill() {
 }
 
 #[test]
+fn install_uses_frontmatter_name_over_directory() {
+    let home = tempdir().unwrap();
+    let project = tempdir().unwrap();
+
+    equip()
+        .env("HOME", home.path())
+        .current_dir(project.path())
+        .args([
+            "install",
+            &fixture_path("misnamed-dir"),
+            "--local",
+            "--agent",
+            "claude",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("correct-name"));
+
+    // Installed under frontmatter name, not directory name
+    let correct = project.path().join(".claude/skills/correct-name");
+    assert!(correct.join("SKILL.md").exists());
+    let wrong = project.path().join(".claude/skills/misnamed-dir");
+    assert!(!wrong.exists());
+}
+
+#[test]
+fn install_renames_old_skill_on_name_change() {
+    let home = tempdir().unwrap();
+    let project = tempdir().unwrap();
+    let source = fixture_path("misnamed-dir");
+
+    // Simulate old behavior: manually install under directory name "misnamed-dir"
+    let old_dir = project.path().join(".claude/skills/misnamed-dir");
+    fs::create_dir_all(&old_dir).unwrap();
+    fs::copy(
+        Path::new(&source).join("SKILL.md"),
+        old_dir.join("SKILL.md"),
+    )
+    .unwrap();
+
+    // Create registry entry pointing to the source under the old name
+    let scope = project.path().canonicalize().unwrap();
+    let registry_dir = home.path().join(".equip");
+    fs::create_dir_all(&registry_dir).unwrap();
+    fs::write(
+        registry_dir.join("registry.json"),
+        format!(
+            r#"{{"version":1,"entries":{{"{}/misnamed-dir":{{"skill_name":"misnamed-dir","scope":"{}","source":"{}","source_type":"local","installed_at":"2026-03-20T00:00:00Z","agents":["claude"],"equip_version":"0.3.1"}}}}}}"#,
+            scope.display(),
+            scope.display(),
+            source.replace('\\', "\\\\")
+        ),
+    )
+    .unwrap();
+
+    // Reinstall from same source — should rename misnamed-dir → correct-name
+    equip()
+        .env("HOME", home.path())
+        .current_dir(project.path())
+        .args(["install", &source, "--local", "--agent", "claude"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("renamed"))
+        .stdout(predicate::str::contains("correct-name"));
+
+    // Old directory gone, new one exists
+    assert!(!project.path().join(".claude/skills/misnamed-dir").exists());
+    assert!(
+        project
+            .path()
+            .join(".claude/skills/correct-name/SKILL.md")
+            .exists()
+    );
+}
+
+#[test]
 fn install_multi_skill_repo() {
     let home = tempdir().unwrap();
     let project = tempdir().unwrap();

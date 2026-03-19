@@ -1,5 +1,5 @@
 ---
-name: test-skill
+name: valid-skill
 description: A test skill for integration testing
 ---
 

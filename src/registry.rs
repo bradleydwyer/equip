@@ -158,6 +158,23 @@ impl Registry {
         self.entries.get(&key)
     }
 
+    /// Find an entry by source string within a scope (for rename detection).
+    /// Returns None if multiple entries share the same source (multi-skill repo).
+    pub fn find_unique_by_source(&self, scope: &str, source: &str) -> Option<&RegistryEntry> {
+        let prefix = format!("{scope}/");
+        let matches: Vec<_> = self
+            .entries
+            .iter()
+            .filter(|(k, _)| k.starts_with(&prefix))
+            .filter(|(_, v)| v.source == source)
+            .collect();
+        if matches.len() == 1 {
+            Some(matches[0].1)
+        } else {
+            None
+        }
+    }
+
     /// Get all entries for a given scope.
     pub fn entries_for_scope(&self, scope: &str) -> Vec<&RegistryEntry> {
         let prefix = format!("{scope}/");

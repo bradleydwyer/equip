@@ -143,6 +143,42 @@ fn do_install(
         let skill_name = resolve_skill_name(path, &fm.name, temp_dir);
         validate_skill_name(&skill_name)?;
 
+        // Rename detection: if this source was previously installed under a different name,
+        // remove the old directories and registry entry.
+        // Skip for multi-skill repos — each skill is a separate identity, not a rename.
+        let scope = if global {
+            registry::scope_global().to_string()
+        } else {
+            registry::scope_for_project(project_root)
+        };
+        if skills.len() == 1 {
+            let reg = registry::Registry::load()?;
+            if let Some(old_entry) = reg.find_unique_by_source(&scope, source_str) {
+                if old_entry.skill_name != skill_name {
+                    let old_name = old_entry.skill_name.clone();
+                    if !json && !quiet {
+                        println!(
+                            "  {} renamed → {} (removing old directories)",
+                            output::dim(&old_name),
+                            output::bold(&skill_name),
+                        );
+                    }
+                    // Remove old skill directories from all agents
+                    for agent in agents {
+                        let old_target =
+                            agents::skill_dir(agent, global, project_root)?.join(&old_name);
+                        if old_target.exists() {
+                            let _ = std::fs::remove_dir_all(&old_target);
+                        }
+                    }
+                    // Remove old registry entry
+                    let mut reg = reg;
+                    reg.remove_entry(&scope, &old_name);
+                    reg.save()?;
+                }
+            }
+        }
+
         let mut agent_names = Vec::new();
         let mut agent_paths = Vec::new();
         let mut content_hash = None;
@@ -478,20 +514,18 @@ fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<(), String> {
 fn resolve_skill_name(
     skill_path: &Path,
     frontmatter_name: &str,
-    temp_dir: Option<&Path>,
+    _temp_dir: Option<&Path>,
 ) -> String {
-    // When the skill is at the root of a temp clone dir, the directory name
-    // is a meaningless timestamp (e.g. "equip-1773835822037"). Use the
-    // frontmatter name instead.
-    if let Some(temp) = temp_dir
-        && skill_path == temp
-    {
+    // Always prefer the frontmatter name — it's the canonical skill identity.
+    // The directory name is just a filesystem artifact (e.g. a skill named
+    // "equip" might live in a dir called "skill/").
+    if !frontmatter_name.is_empty() {
         return frontmatter_name.to_string();
     }
     skill_path
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_else(|| frontmatter_name.to_string())
+        .unwrap_or_else(|| "unknown".to_string())
 }
 
 fn validate_skill_name(name: &str) -> Result<(), String> {
