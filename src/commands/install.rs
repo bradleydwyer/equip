@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -10,6 +12,11 @@ use crate::output;
 use crate::skill;
 use crate::source::SkillSource;
 use crate::sync;
+
+thread_local! {
+    /// Track sources currently being installed to prevent infinite include cycles.
+    static INSTALLING: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
+}
 
 pub fn run(
     source_str: &str,
@@ -39,6 +46,12 @@ fn run_inner(
     json: bool,
     quiet: bool,
 ) -> Result<(), String> {
+    // Cycle detection for recursive includes
+    let already_installing = INSTALLING.with(|s| !s.borrow_mut().insert(source_str.to_string()));
+    if already_installing {
+        return Ok(()); // Skip silently — already being installed up the call stack
+    }
+
     let project_root =
         std::env::current_dir().map_err(|e| format!("Failed to get current directory: {e}"))?;
     let source = SkillSource::parse(source_str)?;
@@ -64,6 +77,9 @@ fn run_inner(
     if let Some(temp) = &temp_dir {
         let _ = std::fs::remove_dir_all(temp);
     }
+
+    // Remove from cycle detection set
+    INSTALLING.with(|s| s.borrow_mut().remove(source_str));
 
     result
 }
