@@ -134,6 +134,10 @@ enum Commands {
         /// Git protocol to use: ssh or https (auto-detects by default, falls back on failure)
         #[arg(long)]
         protocol: Option<String>,
+
+        /// Discard unpushed changes in existing sync repo
+        #[arg(long)]
+        force: bool,
     },
 
     /// Export installed skills to sync backend or file
@@ -231,7 +235,8 @@ fn main() {
             source,
             path,
             protocol,
-        } => commands::init::run(source.as_deref(), path.as_deref(), protocol.as_deref()),
+            force,
+        } => commands::init::run(source.as_deref(), path.as_deref(), protocol.as_deref(), force),
 
         Commands::Export { output, json } => commands::export::run(output.as_deref(), json),
 

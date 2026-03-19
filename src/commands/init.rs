@@ -5,7 +5,7 @@ use crate::ops;
 use crate::output;
 use crate::source::SkillSource;
 
-pub fn run(source: Option<&str>, path: Option<&str>, protocol: Option<&str>) -> Result<(), String> {
+pub fn run(source: Option<&str>, path: Option<&str>, protocol: Option<&str>, force: bool) -> Result<(), String> {
     if source.is_some() && path.is_some() {
         return Err("Provide either a GitHub repo or --path, not both.".to_string());
     }
@@ -22,12 +22,12 @@ pub fn run(source: Option<&str>, path: Option<&str>, protocol: Option<&str>) -> 
     }
 
     if let Some(source_str) = source {
-        return init_git_backend(source_str, protocol);
+        return init_git_backend(source_str, protocol, force);
     }
 
     // No source or path — default to <gh-user>/loadout
     let default_source = resolve_default_repo()?;
-    init_git_backend(&default_source, protocol)
+    init_git_backend(&default_source, protocol, force)
 }
 
 fn resolve_default_repo() -> Result<String, String> {
@@ -89,7 +89,7 @@ fn init_file_backend(path_str: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn init_git_backend(source_str: &str, protocol: Option<&str>) -> Result<(), String> {
+fn init_git_backend(source_str: &str, protocol: Option<&str>, force: bool) -> Result<(), String> {
     let source = SkillSource::parse(source_str)?;
     let repo_shorthand = match &source {
         SkillSource::GitHub { owner, repo, .. } => format!("{owner}/{repo}"),
@@ -115,6 +115,17 @@ fn init_git_backend(source_str: &str, protocol: Option<&str>) -> Result<(), Stri
     let equip_dir = config::equip_dir()?;
     std::fs::create_dir_all(&equip_dir)
         .map_err(|e| format!("Failed to create {}: {e}", equip_dir.display()))?;
+
+    // Check for unpushed changes in existing repo before replacing it
+    if repo_dir.exists() && !force {
+        let repo_str = repo_dir.display().to_string();
+        if has_unpushed_changes(&repo_str) {
+            return Err(
+                "Existing sync repo has unpushed changes. Run 'equip export' first, or re-run with --force to discard them."
+                    .to_string(),
+            );
+        }
+    }
 
     // Clone to a temp dir first so we don't destroy the existing repo on failure
     let temp_repo = equip_dir.join("repo.tmp");
@@ -346,6 +357,36 @@ equip update                      # update all skills
 ```
 "#
     )
+}
+
+/// Check if the local repo has uncommitted changes or unpushed commits.
+fn has_unpushed_changes(repo_dir: &str) -> bool {
+    // Check for uncommitted changes (unstaged + staged + untracked)
+    let dirty = Command::new("git")
+        .args(["-C", repo_dir, "status", "--porcelain"])
+        .output()
+        .ok()
+        .is_some_and(|o| !String::from_utf8_lossy(&o.stdout).trim().is_empty());
+
+    if dirty {
+        return true;
+    }
+
+    // Check for commits ahead of remote
+    let ahead = Command::new("git")
+        .args(["-C", repo_dir, "rev-list", "--count", "@{u}..HEAD"])
+        .output()
+        .ok()
+        .and_then(|o| {
+            if o.status.success() {
+                String::from_utf8_lossy(&o.stdout).trim().parse::<u32>().ok()
+            } else {
+                None
+            }
+        })
+        .unwrap_or(0);
+
+    ahead > 0
 }
 
 fn run_git(repo_dir: &str, args: &[&str]) -> Result<(), String> {
