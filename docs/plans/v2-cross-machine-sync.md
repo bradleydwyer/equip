@@ -1,3 +1,5 @@
+Status: Completed (implemented in 0.0.1)
+
 # equip v2: Cross-Machine Skill Sync
 
 ## Context

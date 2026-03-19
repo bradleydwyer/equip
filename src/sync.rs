@@ -91,7 +91,7 @@ pub fn push(config: &EquipConfig) -> Result<(), String> {
 
             // Stage ops/, skills/, and README
             let add = Command::new("git")
-                .args(["-C", &repo_str, "add", "ops/", "skills/", "README.md"])
+                .args(["-C", &repo_str, "add", ".ops/", "skills/", "README.md"])
                 .output()
                 .map_err(|e| format!("Failed to run git add: {e}"))?;
             if !add.status.success() {

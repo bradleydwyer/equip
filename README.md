@@ -8,6 +8,10 @@ Install and sync SKILL.md files across AI coding agents and machines. One comman
 
 Single static binary. No Node.js, no Python. Just install and go.
 
+<p align="center">
+  <img src="demos/equip-init.gif" alt="equip demo — init, install, and list" />
+</p>
+
 > **Warning:** equip is under active development. Expect breaking changes between versions — there are no backwards compatibility guarantees yet.
 
 ## First Setup

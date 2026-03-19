@@ -5,7 +5,12 @@ use crate::ops;
 use crate::output;
 use crate::source::SkillSource;
 
-pub fn run(source: Option<&str>, path: Option<&str>, protocol: Option<&str>, force: bool) -> Result<(), String> {
+pub fn run(
+    source: Option<&str>,
+    path: Option<&str>,
+    protocol: Option<&str>,
+    force: bool,
+) -> Result<(), String> {
     if source.is_some() && path.is_some() {
         return Err("Provide either a GitHub repo or --path, not both.".to_string());
     }
@@ -60,7 +65,7 @@ fn init_file_backend(path_str: &str) -> Result<(), String> {
     let path = std::path::PathBuf::from(path_str);
 
     // Create directory and ops subdirectory
-    let ops_path = path.join("ops");
+    let ops_path = path.join(".ops");
     std::fs::create_dir_all(&ops_path)
         .map_err(|e| format!("Failed to create {}: {e}", ops_path.display()))?;
 
@@ -158,7 +163,7 @@ fn init_git_backend(source_str: &str, protocol: Option<&str>, force: bool) -> Re
         }
 
         // Create ops directory, README, and initial commit
-        let ops_path = temp_repo.join("ops");
+        let ops_path = temp_repo.join(".ops");
         std::fs::create_dir_all(&ops_path).map_err(|e| format!("Failed to create ops dir: {e}"))?;
 
         std::fs::write(ops_path.join(".gitkeep"), "")
@@ -173,7 +178,7 @@ fn init_git_backend(source_str: &str, protocol: Option<&str>, force: bool) -> Re
         run_git(&repo_str, &["push"])?;
     } else {
         // Ensure ops directory exists in the cloned repo
-        let ops_path = temp_repo.join("ops");
+        let ops_path = temp_repo.join(".ops");
         if !ops_path.exists() {
             std::fs::create_dir_all(&ops_path)
                 .map_err(|e| format!("Failed to create ops dir: {e}"))?;
@@ -204,7 +209,7 @@ fn init_git_backend(source_str: &str, protocol: Option<&str>, force: bool) -> Re
     config::write(&config)?;
 
     // Check for existing ops
-    let ops_path = repo_dir.join("ops");
+    let ops_path = repo_dir.join(".ops");
     let state = ops::compute_state(&ops_path)?;
     if !state.is_empty() {
         println!(
@@ -379,7 +384,10 @@ fn has_unpushed_changes(repo_dir: &str) -> bool {
         .ok()
         .and_then(|o| {
             if o.status.success() {
-                String::from_utf8_lossy(&o.stdout).trim().parse::<u32>().ok()
+                String::from_utf8_lossy(&o.stdout)
+                    .trim()
+                    .parse::<u32>()
+                    .ok()
             } else {
                 None
             }

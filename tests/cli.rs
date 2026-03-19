@@ -1051,7 +1051,7 @@ fn init_file_backend_creates_ops_dir() {
         .assert()
         .success();
 
-    assert!(sync_dir.path().join("ops").is_dir());
+    assert!(sync_dir.path().join(".ops").is_dir());
 }
 
 #[test]
@@ -1061,7 +1061,7 @@ fn init_file_backend_detects_existing_ops() {
 
     // Pre-create an op
     write_op_file(
-        &sync_dir.path().join("ops"),
+        &sync_dir.path().join(".ops"),
         "20260315T100000Z-add-pdf.json",
         r#"{"op":"add","skill":"pdf","source":"anthropics/skills/pdf","description":"PDF","ts":"2026-03-15T10:00:00Z"}"#,
     );
@@ -1142,7 +1142,7 @@ fn export_to_file_backend() {
         .success();
 
     // Check ops dir has a file (from auto-sync or export)
-    let ops = fs::read_dir(sync_dir.path().join("ops"))
+    let ops = fs::read_dir(sync_dir.path().join(".ops"))
         .unwrap()
         .filter_map(|e| e.ok())
         .filter(|e| e.path().extension().map(|x| x == "json").unwrap_or(false))
@@ -1328,7 +1328,7 @@ fn restore_from_file_backend() {
 
     // Write op files pointing to local fixtures
     write_op_file(
-        &sync_dir.path().join("ops"),
+        &sync_dir.path().join(".ops"),
         "20260315T100000Z-add-valid-skill.json",
         &format!(
             r#"{{"op":"add","skill":"valid-skill","source":"{}","description":"test","ts":"2026-03-15T10:00:00Z"}}"#,
@@ -1396,7 +1396,7 @@ fn restore_dry_run_no_side_effects() {
         .success();
 
     write_op_file(
-        &sync_dir.path().join("ops"),
+        &sync_dir.path().join(".ops"),
         "20260315T100000Z-add-valid-skill.json",
         &format!(
             r#"{{"op":"add","skill":"valid-skill","source":"{}","description":"test","ts":"2026-03-15T10:00:00Z"}}"#,
@@ -1457,7 +1457,7 @@ fn restore_skips_removed_skills() {
 
     // Add then remove
     write_op_file(
-        &sync_dir.path().join("ops"),
+        &sync_dir.path().join(".ops"),
         "20260315T100000Z-add-valid-skill.json",
         &format!(
             r#"{{"op":"add","skill":"valid-skill","source":"{}","description":"test","ts":"2026-03-15T10:00:00Z"}}"#,
@@ -1465,7 +1465,7 @@ fn restore_skips_removed_skills() {
         ),
     );
     write_op_file(
-        &sync_dir.path().join("ops"),
+        &sync_dir.path().join(".ops"),
         "20260316T100000Z-remove-valid-skill.json",
         r#"{"op":"remove","skill":"valid-skill","ts":"2026-03-16T10:00:00Z"}"#,
     );
@@ -1587,7 +1587,7 @@ fn status_missing_skill() {
 
     // Write op for a skill not installed locally
     write_op_file(
-        &sync_dir.path().join("ops"),
+        &sync_dir.path().join(".ops"),
         "20260315T100000Z-add-missing-skill.json",
         r#"{"op":"add","skill":"missing-skill","source":"some/repo","description":"test","ts":"2026-03-15T10:00:00Z"}"#,
     );
@@ -1622,7 +1622,7 @@ fn status_untracked_skill() {
         .success();
 
     // The auto-sync will have written an op. Remove it to simulate untracked.
-    let ops_dir = sync_dir.path().join("ops");
+    let ops_dir = sync_dir.path().join(".ops");
     for entry in fs::read_dir(&ops_dir).unwrap().flatten() {
         if entry
             .path()
@@ -1704,7 +1704,7 @@ fn status_ignores_removed_in_ops() {
         .success();
 
     // Clear auto-synced ops, then write add + remove
-    let ops_dir = sync_dir.path().join("ops");
+    let ops_dir = sync_dir.path().join(".ops");
     for entry in fs::read_dir(&ops_dir).unwrap().flatten() {
         if entry
             .path()
@@ -1758,7 +1758,7 @@ fn install_auto_syncs_when_backend_exists() {
         .success();
 
     // Check that an add op was created
-    let ops_count = fs::read_dir(sync_dir.path().join("ops"))
+    let ops_count = fs::read_dir(sync_dir.path().join(".ops"))
         .unwrap()
         .filter_map(|e| e.ok())
         .filter(|e| {
@@ -1795,7 +1795,7 @@ fn remove_auto_syncs_when_backend_exists() {
         .assert()
         .success();
 
-    let remove_ops = fs::read_dir(sync_dir.path().join("ops"))
+    let remove_ops = fs::read_dir(sync_dir.path().join(".ops"))
         .unwrap()
         .filter_map(|e| e.ok())
         .filter(|e| {
@@ -1849,7 +1849,7 @@ fn install_local_does_not_sync() {
         .success();
 
     // No add ops should exist (only .gitkeep from init)
-    let json_ops = fs::read_dir(sync_dir.path().join("ops"))
+    let json_ops = fs::read_dir(sync_dir.path().join(".ops"))
         .unwrap()
         .filter_map(|e| e.ok())
         .filter(|e| e.path().extension().map(|x| x == "json").unwrap_or(false))
