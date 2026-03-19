@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use crate::agents::{self, AGENTS};
 use crate::config;
 use crate::ops;
@@ -57,26 +55,20 @@ pub fn run(output_path: Option<&str>, json: bool) -> Result<(), String> {
         return Ok(());
     }
 
-    // Backend mode — write ops and copy skill content
+    // Backend mode — write ops only (source repos are the source of truth)
     let cfg = config::read()?.ok_or_else(|| {
         "No sync backend configured. Run 'equip init' first, or use --output for file export."
             .to_string()
     })?;
 
     let ops_dir = config::ops_dir(&cfg)?;
-    let skills_dir = config::skills_dir(&cfg)?;
     sync::pull(&cfg)?;
 
     let mut exported = 0;
 
     for skill in &skills {
-        // Always write an op to keep the log in sync with content
         let op = ops::add_op(&skill.name, skill.source.as_deref(), &skill.description);
         ops::write_op(&ops_dir, &op)?;
-
-        // Always copy/update skill content
-        let dest = skills_dir.join(&skill.name);
-        copy_skill_dir(&skill.path, &dest)?;
         exported += 1;
     }
 
@@ -94,7 +86,6 @@ struct InstalledSkill {
     name: String,
     source: Option<String>,
     description: String,
-    path: std::path::PathBuf,
 }
 
 fn scan_installed_skills(project_root: &std::path::Path) -> Result<Vec<InstalledSkill>, String> {
@@ -122,56 +113,19 @@ fn scan_installed_skills(project_root: &std::path::Path) -> Result<Vec<Installed
             let description = skill::read_skill(&path)
                 .map(|fm| fm.description)
                 .unwrap_or_default();
-            let source = reg.get(registry::scope_global(), &name).map(|e| e.source.clone());
+            let source = reg
+                .get(registry::scope_global(), &name)
+                .map(|e| e.source.clone());
             seen.insert(
                 name.clone(),
                 InstalledSkill {
                     name,
                     source,
                     description,
-                    path: path.clone(),
                 },
             );
         }
     }
 
     Ok(seen.into_values().collect())
-}
-
-/// Copy a skill directory to a destination, excluding .git and .equip.json
-fn copy_skill_dir(src: &Path, dest: &Path) -> Result<(), String> {
-    // Remove existing destination to get a clean copy
-    if dest.exists() {
-        std::fs::remove_dir_all(dest)
-            .map_err(|e| format!("Failed to clean {}: {e}", dest.display()))?;
-    }
-    std::fs::create_dir_all(dest)
-        .map_err(|e| format!("Failed to create {}: {e}", dest.display()))?;
-    copy_dir_recursive(src, dest)
-}
-
-fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<(), String> {
-    for entry in
-        std::fs::read_dir(src).map_err(|e| format!("Failed to read {}: {e}", src.display()))?
-    {
-        let entry = entry.map_err(|e| format!("Failed to read entry: {e}"))?;
-        let src_path = entry.path();
-        let file_name = entry.file_name();
-
-        let name = file_name.to_string_lossy();
-        if name == ".git" || name == ".equip.json" {
-            continue;
-        }
-
-        let dest_path = dest.join(&file_name);
-        if src_path.is_dir() {
-            std::fs::create_dir_all(&dest_path)
-                .map_err(|e| format!("Failed to create {}: {e}", dest_path.display()))?;
-            copy_dir_recursive(&src_path, &dest_path)?;
-        } else {
-            std::fs::copy(&src_path, &dest_path)
-                .map_err(|e| format!("Failed to copy {}: {e}", src_path.display()))?;
-        }
-    }
-    Ok(())
 }

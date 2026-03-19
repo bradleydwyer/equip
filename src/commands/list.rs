@@ -97,6 +97,8 @@ fn print_table(skills: &BTreeMap<String, InstalledSkill>, global: bool, long: bo
 
     let total_agents = AGENTS.len();
     let mut unmanaged_count = 0;
+    let max_name = skills.keys().map(|n| n.len()).max().unwrap_or(0);
+    let col_width = max_name + 2; // padding
 
     for (name, info) in skills {
         let prefix = if info.managed {
@@ -117,10 +119,12 @@ fn print_table(skills: &BTreeMap<String, InstalledSkill>, global: bool, long: bo
             format!("{} ({}/{})", ids.join(", "), info.agents.len(), total_agents)
         };
 
+        // Pad raw name then apply bold, so ANSI codes don't break alignment
+        let padded = format!("{:<width$}", name, width = col_width);
         println!(
-            "  {} {:<20} {}",
+            "  {} {} {}",
             prefix,
-            output::bold(name),
+            output::bold(&padded),
             output::dim(&agents_str),
         );
         if long && !info.description.is_empty() {

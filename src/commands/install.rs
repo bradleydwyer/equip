@@ -271,17 +271,12 @@ fn do_install(
         }
     }
 
-    // Auto-sync: write ops and copy skill content if backend is configured and this is a global install
+    // Auto-sync: write ops if backend is configured and this is a global install
     if global
         && let Ok(Some(cfg)) = config::read()
-        && let Ok(skills_dir) = config::skills_dir(&cfg)
     {
         for (path, fm) in &skills {
             let skill_name = resolve_skill_name(path, &fm.name, temp_dir);
-            // Copy skill content to repo
-            let dest = skills_dir.join(&skill_name);
-            let _ = copy_skill(path, &dest);
-            // Write op
             let op = ops::add_op(&skill_name, Some(source_str), &fm.description);
             if let Err(e) = sync::write_and_push(&cfg, &op)
                 && !json
@@ -411,9 +406,53 @@ fn temp_clone_dir() -> PathBuf {
 fn copy_skill(src: &Path, dest: &Path) -> Result<(), String> {
     std::fs::create_dir_all(dest)
         .map_err(|e| format!("Failed to create {}: {e}", dest.display()))?;
-    copy_dir_recursive(src, dest)
+    copy_skill_files(src, dest)
 }
 
+/// Copy only skill-relevant files from src to dest.
+/// Allowlist: SKILL.md, LICENSE*, and known skill directories.
+/// Everything else (source code, CI, build files) is skipped.
+fn copy_skill_files(src: &Path, dest: &Path) -> Result<(), String> {
+    for entry in
+        std::fs::read_dir(src).map_err(|e| format!("Failed to read {}: {e}", src.display()))?
+    {
+        let entry = entry.map_err(|e| format!("Failed to read entry: {e}"))?;
+        let src_path = entry.path();
+        let file_name = entry.file_name();
+        let name = file_name.to_string_lossy();
+
+        if src_path.is_dir() {
+            if is_skill_dir(&name) {
+                let dest_path = dest.join(&file_name);
+                std::fs::create_dir_all(&dest_path)
+                    .map_err(|e| format!("Failed to create {}: {e}", dest_path.display()))?;
+                copy_dir_recursive(&src_path, &dest_path)?;
+            }
+        } else if is_skill_file(&name) {
+            let dest_path = dest.join(&file_name);
+            std::fs::copy(&src_path, &dest_path)
+                .map_err(|e| format!("Failed to copy {}: {e}", src_path.display()))?;
+        }
+    }
+    Ok(())
+}
+
+/// Directories that are part of a skill (not project infrastructure).
+fn is_skill_dir(name: &str) -> bool {
+    matches!(
+        name,
+        "references" | "scripts" | "agents" | "assets" | "evals" | "eval-viewer"
+    )
+}
+
+/// Files that are part of a skill.
+fn is_skill_file(name: &str) -> bool {
+    name == "SKILL.md"
+        || name.starts_with("LICENSE")
+        || name.starts_with("license")
+}
+
+/// Full recursive copy for skill subdirectories (references/, scripts/, etc.)
 fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<(), String> {
     for entry in
         std::fs::read_dir(src).map_err(|e| format!("Failed to read {}: {e}", src.display()))?
@@ -423,7 +462,7 @@ fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<(), String> {
         let file_name = entry.file_name();
 
         let name = file_name.to_string_lossy();
-        if name == ".git" || name == ".equip.json" {
+        if name.starts_with('.') {
             continue;
         }
 

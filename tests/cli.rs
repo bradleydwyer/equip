@@ -1292,8 +1292,14 @@ fn export_skips_already_tracked_skills() {
         .assert()
         .success();
 
-    // Verify skill content is in the repo
-    assert!(sync_dir.path().join("skills/valid-skill/SKILL.md").exists());
+    // Verify ops were written (no skill content — source repos are the source of truth)
+    let ops_dir = sync_dir.path().join(".ops");
+    let ops: Vec<_> = std::fs::read_dir(&ops_dir)
+        .unwrap()
+        .flatten()
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "json"))
+        .collect();
+    assert!(!ops.is_empty());
 }
 
 #[test]
