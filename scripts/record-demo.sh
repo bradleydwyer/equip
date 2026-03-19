@@ -32,6 +32,17 @@ done
 SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 VM_IP=""
 
+# Only delete bradleydwyer/loadout if it's actually named "loadout" (not a
+# GitHub redirect from loadout-brad). Without this check, gh repo delete
+# would follow the redirect and destroy the real loadout-brad repo.
+safe_delete_loadout() {
+    local actual_name
+    actual_name=$(gh api repos/bradleydwyer/loadout --jq '.name' 2>/dev/null || echo "")
+    if [[ "$actual_name" == "loadout" ]]; then
+        gh repo delete bradleydwyer/loadout --yes 2>/dev/null || true
+    fi
+}
+
 cleanup() {
     echo ""
     echo "==> Cleaning up..."
@@ -39,7 +50,7 @@ cleanup() {
     tart delete "$VM_NAME" 2>/dev/null || true
 
     # Delete the loadout repo created during the demo
-    gh repo delete bradleydwyer/loadout --yes 2>/dev/null || true
+    safe_delete_loadout
     echo "  Done."
 }
 trap cleanup EXIT
@@ -57,7 +68,7 @@ mkdir -p "$DEMOS_DIR"
 # --- Optionally delete loadout repo for a clean demo ---
 if [[ "$CLEAN_LOADOUT" == true ]]; then
     echo "==> Deleting bradleydwyer/loadout..."
-    gh repo delete bradleydwyer/loadout --yes 2>/dev/null || true
+    safe_delete_loadout
     echo "    Clean."
     echo ""
 fi
@@ -97,9 +108,9 @@ type_cmd() {
     local cmd="$1"
     for (( i=0; i<${#cmd}; i++ )); do
         printf '%s' "${cmd:$i:1}"
-        sleep 0.02
+        sleep 0.008
     done
-    sleep 0.3
+    sleep 0.15
     echo
 }
 
@@ -113,8 +124,8 @@ type_cmd "equip init"
 equip init 2>&1
 sleep 1
 
-type_cmd "equip install anthropics/skills/pdf"
-equip install anthropics/skills/pdf 2>&1
+type_cmd "equip install anthropics/skills/frontend-design"
+equip install anthropics/skills/frontend-design 2>&1
 sleep 1
 
 type_cmd "equip list"
