@@ -395,8 +395,10 @@ fn print_human(
             .map(|i| (i.agent_id, i.scope.as_str()))
             .collect();
         skills.values().skip(1).all(|insts| {
-            let set: BTreeSet<(&str, &str)> =
-                insts.iter().map(|i| (i.agent_id, i.scope.as_str())).collect();
+            let set: BTreeSet<(&str, &str)> = insts
+                .iter()
+                .map(|i| (i.agent_id, i.scope.as_str()))
+                .collect();
             set == first_set
         })
     };
@@ -421,11 +423,7 @@ fn print_human(
             }
         } else {
             let locations = format_locations(instances, detected_ids, scan_path);
-            println!(
-                "  {:<24} {}",
-                output::bold(name),
-                output::dim(&locations)
-            );
+            println!("  {:<24} {}", output::bold(name), output::dim(&locations));
             if !desc.is_empty() {
                 println!("    {}", output::dim(&desc));
             }
