@@ -100,7 +100,7 @@ echo "==> Installing equip..."
 run_ssh 'mkdir -p ~/bin'
 scp $SSH_OPTS "$PROJECT_DIR/target/release/equip" "admin@${VM_IP}:bin/equip"
 run_ssh 'chmod +x ~/bin/equip && export PATH="$HOME/bin:$PATH" && equip --version'
-run_ssh 'mkdir -p ~/.claude'
+run_ssh 'mkdir -p ~/.claude ~/.codex'
 echo "    Installed."
 echo ""
 
