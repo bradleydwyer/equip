@@ -170,7 +170,7 @@ echo "==> Converting to GIF..."
 agg "$DEMOS_DIR/equip-init.cast" "$DEMOS_DIR/equip-init.gif" \
     --theme dracula \
     --font-size 16 \
-    --speed 1 \
+    --speed 1.5 \
     --quiet
 echo "    Done: $DEMOS_DIR/equip-init.gif"
 echo ""
