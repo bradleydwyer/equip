@@ -42,7 +42,7 @@ equip outdated                             # see what's changed
 equip update                               # re-install from source
 ```
 
-`equip outdated` detects upstream changes and local modifications. `equip update` re-installs all skills from their original source (warns if you have local edits).
+`equip outdated` detects upstream changes and local modifications. `equip update` updates skills that have changed (skips up-to-date, warns about local edits).
 
 ## Adopt Existing Skills
 
@@ -50,7 +50,7 @@ Already have skills in `~/.claude/skills/` that weren't installed with equip?
 
 ```bash
 equip survey                               # find unmanaged skills
-equip fix                                  # adopt them interactively
+equip survey --fix                         # adopt them interactively
 ```
 
 ## Cross-Machine Sync
@@ -82,7 +82,7 @@ anthropics/skills/skills/pdf
 equip list                                 # list installed skills
 equip survey --path ~/dev                  # scan all projects for skill issues
 equip config projects_path ~/dev           # set default survey path
-equip sync                                 # generate AGENTS.md
+equip agents                               # generate AGENTS.md
 ```
 
 Every command supports `--json` and most support `--local` for project scope.
