@@ -23,10 +23,10 @@ pub fn run(name: Option<&str>, global: bool, json: bool) -> Result<(), String> {
     let mut skills: Vec<(String, std::path::PathBuf, SkillMetadata)> = Vec::new();
 
     for entry in reg_entries {
-        if let Some(target) = name {
-            if entry.skill_name != target {
-                continue;
-            }
+        if let Some(target) = name
+            && entry.skill_name != target
+        {
+            continue;
         }
 
         if let Some(path) = registry::find_skill_path(&entry.skill_name, global, &project_root) {
