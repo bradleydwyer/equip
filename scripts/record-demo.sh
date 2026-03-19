@@ -94,12 +94,19 @@ done
 echo "    SSH ready."
 echo ""
 
+# --- Update brew tap so we get the latest equip version ---
+echo "==> Updating brew tap..."
+run_ssh 'eval "$(/opt/homebrew/bin/brew shellenv)" && brew update --quiet'
+echo "    Updated."
+echo ""
+
 # --- Copy recording script into VM ---
 echo "==> Setting up recording script..."
 cat <<'DEMO_SCRIPT' | ssh $SSH_OPTS "admin@${VM_IP}" "cat > /tmp/demo.sh && chmod +x /tmp/demo.sh"
 #!/bin/bash
 eval "$(/opt/homebrew/bin/brew shellenv)"
 export HOMEBREW_NO_ENV_HINTS=1
+export HOMEBREW_NO_AUTO_UPDATE=1
 mkdir -p ~/.claude
 PROMPT="\033[32m❯\033[0m "
 
@@ -108,9 +115,9 @@ type_cmd() {
     local cmd="$1"
     for (( i=0; i<${#cmd}; i++ )); do
         printf '%s' "${cmd:$i:1}"
-        sleep 0.008
+        sleep 0.05
     done
-    sleep 0.15
+    sleep 0.3
     echo
 }
 
@@ -124,8 +131,8 @@ type_cmd "equip init"
 equip init 2>&1
 sleep 1
 
-type_cmd "equip install anthropics/skills/frontend-design"
-equip install anthropics/skills/frontend-design 2>&1
+type_cmd "equip install anthropics/skills/skills/frontend-design"
+equip install anthropics/skills/skills/frontend-design 2>&1
 sleep 1
 
 type_cmd "equip list"
