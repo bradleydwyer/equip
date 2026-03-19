@@ -110,6 +110,8 @@ cat <<'DEMO_SCRIPT' | ssh $SSH_OPTS "admin@${VM_IP}" "cat > /tmp/demo.sh && chmo
 #!/bin/bash
 eval "$(/opt/homebrew/bin/brew shellenv)"
 export PATH="$HOME/bin:$PATH"
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
 export HOMEBREW_NO_ENV_HINTS=1
 export HOMEBREW_NO_AUTO_UPDATE=1
 PROMPT="\033[32m❯\033[0m "
