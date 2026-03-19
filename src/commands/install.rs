@@ -272,9 +272,7 @@ fn do_install(
     }
 
     // Auto-sync: write ops if backend is configured and this is a global install
-    if global
-        && let Ok(Some(cfg)) = config::read()
-    {
+    if global && let Ok(Some(cfg)) = config::read() {
         for (path, fm) in &skills {
             let skill_name = resolve_skill_name(path, &fm.name, temp_dir);
             let op = ops::add_op(&skill_name, Some(source_str), &fm.description);
@@ -447,9 +445,7 @@ fn is_skill_dir(name: &str) -> bool {
 
 /// Files that are part of a skill.
 fn is_skill_file(name: &str) -> bool {
-    name == "SKILL.md"
-        || name.starts_with("LICENSE")
-        || name.starts_with("license")
+    name == "SKILL.md" || name.starts_with("LICENSE") || name.starts_with("license")
 }
 
 /// Full recursive copy for skill subdirectories (references/, scripts/, etc.)

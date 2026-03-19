@@ -48,7 +48,14 @@ pub fn run(global: bool, json: bool, scan_path: Option<&str>, fix: bool) -> Resu
     } else {
         // Default: both project and global
         let project_scope = registry::scope_for_project(&project_root);
-        scan_scope_with_registry_key(&mut skills, false, &project_root, "project", &reg, &project_scope)?;
+        scan_scope_with_registry_key(
+            &mut skills,
+            false,
+            &project_root,
+            "project",
+            &reg,
+            &project_scope,
+        )?;
         scan_scope(&mut skills, true, &project_root, "global", &reg)?;
     }
 

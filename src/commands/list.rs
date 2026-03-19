@@ -116,7 +116,12 @@ fn print_table(skills: &BTreeMap<String, InstalledSkill>, global: bool, long: bo
                 .iter()
                 .filter_map(|name| AGENTS.iter().find(|a| a.name == *name).map(|a| a.id))
                 .collect();
-            format!("{} ({}/{})", ids.join(", "), info.agents.len(), total_agents)
+            format!(
+                "{} ({}/{})",
+                ids.join(", "),
+                info.agents.len(),
+                total_agents
+            )
         };
 
         // Pad raw name then apply bold, so ANSI codes don't break alignment

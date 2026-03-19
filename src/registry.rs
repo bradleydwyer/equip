@@ -92,8 +92,13 @@ impl Registry {
             .map_err(|e| format!("Failed to serialize registry: {e}"))?;
         std::fs::write(&tmp, json)
             .map_err(|e| format!("Failed to write {}: {e}", tmp.display()))?;
-        std::fs::rename(&tmp, &path)
-            .map_err(|e| format!("Failed to rename {} to {}: {e}", tmp.display(), path.display()))
+        std::fs::rename(&tmp, &path).map_err(|e| {
+            format!(
+                "Failed to rename {} to {}: {e}",
+                tmp.display(),
+                path.display()
+            )
+        })
     }
 
     /// Build the key for an entry: `"{scope}/{skill_name}"`.
@@ -181,11 +186,7 @@ fn registry_path() -> Result<PathBuf, String> {
 }
 
 /// Find the first agent dir that has this skill on disk.
-pub fn find_skill_path(
-    name: &str,
-    global: bool,
-    project_root: &Path,
-) -> Option<PathBuf> {
+pub fn find_skill_path(name: &str, global: bool, project_root: &Path) -> Option<PathBuf> {
     use crate::agents::{self, AGENTS};
     for agent in AGENTS {
         if let Ok(dir) = agents::skill_dir(agent, global, project_root) {

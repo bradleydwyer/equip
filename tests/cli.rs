@@ -94,7 +94,13 @@ fn install_single_skill() {
     // For --local install, the scope is the project path
     let entry = entries.values().next().unwrap();
     assert_eq!(entry["source_type"], "local");
-    assert!(entry["agents"].as_array().unwrap().iter().any(|a| a == "claude"));
+    assert!(
+        entry["agents"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|a| a == "claude")
+    );
 }
 
 #[test]

@@ -56,9 +56,10 @@ pub fn run(json: bool) -> Result<(), String> {
                 continue;
             }
             let name = entry.file_name().to_string_lossy().to_string();
-            installed
-                .entry(name.clone())
-                .or_insert_with(|| reg.get(registry::scope_global(), &name).map(|e| e.source.clone()));
+            installed.entry(name.clone()).or_insert_with(|| {
+                reg.get(registry::scope_global(), &name)
+                    .map(|e| e.source.clone())
+            });
         }
     }
 
