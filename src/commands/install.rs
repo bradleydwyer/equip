@@ -57,7 +57,24 @@ fn run_inner(
     let source = SkillSource::parse(source_str)?;
     let agents = agents::resolve_agents(agent_ids, all, global, &project_root)?;
 
-    let (skill_dir, temp_dir, source_info) = resolve_source(&source)?;
+    let spinner = if !json
+        && !quiet
+        && matches!(
+            source,
+            SkillSource::GitHub { .. } | SkillSource::GitUrl { .. }
+        ) {
+        Some(output::Spinner::start(source_str))
+    } else {
+        None
+    };
+
+    let resolve_result = resolve_source(&source);
+
+    if let Some(s) = spinner {
+        s.stop();
+    }
+
+    let (skill_dir, temp_dir, source_info) = resolve_result?;
 
     let result = do_install(
         &skill_dir,
