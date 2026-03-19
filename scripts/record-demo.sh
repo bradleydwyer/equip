@@ -141,8 +141,8 @@ type_cmd "equip install bradleydwyer/skills"
 equip install bradleydwyer/skills 2>&1
 sleep 1
 
-type_cmd "equip remove megamind"
-equip remove megamind 2>&1
+type_cmd "equip remove remember"
+equip remove remember 2>&1
 sleep 1
 
 type_cmd "equip list --short"
