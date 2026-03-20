@@ -191,11 +191,13 @@ pub fn scope_global() -> &'static str {
 }
 
 pub fn scope_for_project(project_root: &Path) -> String {
-    project_root
+    let path = project_root
         .canonicalize()
         .unwrap_or_else(|_| project_root.to_path_buf())
         .display()
-        .to_string()
+        .to_string();
+    // Normalize backslashes to forward slashes for cross-platform consistency
+    path.replace('\\', "/")
 }
 
 fn registry_path() -> Result<PathBuf, String> {

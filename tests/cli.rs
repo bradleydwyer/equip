@@ -145,16 +145,20 @@ fn install_renames_old_skill_on_name_change() {
     .unwrap();
 
     // Create registry entry pointing to the source under the old name
-    let scope = project.path().canonicalize().unwrap();
+    let scope = project
+        .path()
+        .canonicalize()
+        .unwrap()
+        .display()
+        .to_string()
+        .replace('\\', "/");
+    let escaped_source = source.replace('\\', "/");
     let registry_dir = home.path().join(".equip");
     fs::create_dir_all(&registry_dir).unwrap();
     fs::write(
         registry_dir.join("registry.json"),
         format!(
-            r#"{{"version":1,"entries":{{"{}/misnamed-dir":{{"skill_name":"misnamed-dir","scope":"{}","source":"{}","source_type":"local","installed_at":"2026-03-20T00:00:00Z","agents":["claude"],"equip_version":"0.3.1"}}}}}}"#,
-            scope.display(),
-            scope.display(),
-            source.replace('\\', "\\\\")
+            r#"{{"version":1,"entries":{{"{scope}/misnamed-dir":{{"skill_name":"misnamed-dir","scope":"{scope}","source":"{escaped_source}","source_type":"local","installed_at":"2026-03-20T00:00:00Z","agents":["claude"],"equip_version":"0.3.1"}}}}}}"#,
         ),
     )
     .unwrap();
