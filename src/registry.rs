@@ -162,11 +162,12 @@ impl Registry {
     /// Returns None if multiple entries share the same source (multi-skill repo).
     pub fn find_unique_by_source(&self, scope: &str, source: &str) -> Option<&RegistryEntry> {
         let prefix = format!("{scope}/");
+        let normalized_source = source.replace('\\', "/");
         let matches: Vec<_> = self
             .entries
             .iter()
             .filter(|(k, _)| k.starts_with(&prefix))
-            .filter(|(_, v)| v.source == source)
+            .filter(|(_, v)| v.source.replace('\\', "/") == normalized_source)
             .collect();
         if matches.len() == 1 {
             Some(matches[0].1)
