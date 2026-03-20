@@ -91,6 +91,8 @@ fn init_file_backend(path_str: &str) -> Result<(), String> {
         );
     }
 
+    crate::telemetry::send("init", None, Some("file"));
+
     Ok(())
 }
 
@@ -222,6 +224,8 @@ fn init_git_backend(source_str: &str, protocol: Option<&str>, force: bool) -> Re
     } else {
         println!("{} Linked equip to {}", output::green("✓"), &repo_shorthand);
     }
+
+    crate::telemetry::send("init", None, Some("git"));
 
     Ok(())
 }

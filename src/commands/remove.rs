@@ -87,6 +87,8 @@ pub fn run(name: &str, global: bool, agent_ids: &[String], json: bool) -> Result
         );
     }
 
+    crate::telemetry::send("uninstall", Some(name), None);
+
     // Auto-sync: write remove op if backend is configured and this is a global remove
     if global && let Ok(Some(cfg)) = config::read() {
         let op = ops::remove_op(name);

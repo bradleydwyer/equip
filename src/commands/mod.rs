@@ -7,6 +7,7 @@ pub mod list;
 pub mod outdated;
 pub mod remove;
 pub mod restore;
+pub mod search;
 pub mod status;
 pub mod survey;
 pub mod sync;

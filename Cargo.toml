@@ -1,6 +1,6 @@
 [package]
 name = "equip"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2024"
 description = "Install SKILL.md files across AI coding agents"
 license = "MIT"
@@ -15,6 +15,7 @@ clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 dialoguer = "0.11"
+ureq = { version = "3", features = ["json"] }
 
 [dev-dependencies]
 assert_cmd = "2"

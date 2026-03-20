@@ -246,6 +246,8 @@ fn do_install(
         if !json && !quiet {
             println!("  {} {}", output::bold(&skill_name), output::green("✓"));
         }
+
+        crate::telemetry::send("install", Some(&skill_name), Some(source_str));
     }
 
     // Install includes as part of the same flow

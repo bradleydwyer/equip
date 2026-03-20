@@ -12,6 +12,7 @@ mod registry;
 mod skill;
 mod source;
 mod sync;
+mod telemetry;
 
 #[derive(Parser)]
 #[command(
@@ -192,6 +193,28 @@ enum Commands {
         json: bool,
     },
 
+    /// Search for skills in the equip registry
+    Search {
+        /// Search query (multiple words allowed)
+        query: Vec<String>,
+
+        /// Filter by source
+        #[arg(long)]
+        source: Option<String>,
+
+        /// Sort order: relevance, installs, name
+        #[arg(long, default_value = "relevance")]
+        sort: String,
+
+        /// Number of results to show
+        #[arg(long, default_value = "20")]
+        limit: usize,
+
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
+    },
+
     /// View or set equip configuration
     Config {
         /// Setting key (e.g., projects_path)
@@ -261,6 +284,14 @@ fn main() {
         Commands::Outdated { name, local, json } => {
             commands::outdated::run(name.as_deref(), !local, json)
         }
+
+        Commands::Search {
+            query,
+            source,
+            sort,
+            limit,
+            json,
+        } => commands::search::run(&query, source.as_deref(), &sort, limit, json),
 
         Commands::Config { key, value } => {
             commands::config_cmd::run(key.as_deref(), value.as_deref())

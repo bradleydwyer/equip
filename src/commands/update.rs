@@ -121,6 +121,7 @@ pub fn run(name: Option<&str>, global: bool, json: bool) -> Result<(), String> {
         let agent_ids = meta.agents.clone();
         match super::install::run(&meta.source, global, &agent_ids, false, false) {
             Ok(()) => {
+                crate::telemetry::send("update", Some(skill_name), Some(&meta.source));
                 results.push(serde_json::json!({
                     "name": skill_name,
                     "source": meta.source,

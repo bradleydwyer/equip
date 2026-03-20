@@ -9,3 +9,4 @@ pub mod registry;
 pub mod skill;
 pub mod source;
 pub mod sync;
+pub mod telemetry;

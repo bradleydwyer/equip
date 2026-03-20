@@ -80,6 +80,14 @@ bradleydwyer/sloppy/skill
 anthropics/skills/skills/pdf
 ```
 
+## Search the Registry
+
+```bash
+equip search "code review"                 # find skills by keyword
+equip search testing --sort installs       # sort by popularity
+equip search --json                        # machine-readable output
+```
+
 ## More
 
 ```bash
@@ -91,6 +99,16 @@ equip agents                               # generate AGENTS.md
 ```
 
 Every command supports `--json` and most support `--local` for project scope.
+
+## Telemetry
+
+equip collects anonymous usage data (install/uninstall/update events) to improve the registry. No personal information is collected — just a random client ID, skill name, OS, and equip version.
+
+Opt out at any time:
+
+```bash
+equip config telemetry off
+```
 
 ## License
 

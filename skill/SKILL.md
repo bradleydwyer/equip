@@ -1,11 +1,11 @@
 ---
 name: equip
-description: Manage SKILL.md files across AI coding agents using the equip CLI. Use this skill whenever the user wants to install, uninstall, list, update, edit, check for outdated skills, survey, fix, sync, export, restore, configure, or check status of skills from GitHub repos, git URLs, or local paths. Also trigger when the user asks about managing skills across multiple agents or machines, wants to see what skills are installed, needs to find skill sprawl or duplicates, wants to check if skills are up to date, needs to sync skills to a new machine, or wants to edit or update the contents of a skill's SKILL.md file. If the user mentions "equip" by name, this skill definitely applies.
+description: Manage SKILL.md files across AI coding agents using the equip CLI. Use this skill whenever the user wants to install, uninstall, list, update, edit, search, check for outdated skills, survey, fix, sync, export, restore, configure, or check status of skills from GitHub repos, git URLs, or local paths. Also trigger when the user asks about managing skills across multiple agents or machines, wants to see what skills are installed, needs to find skill sprawl or duplicates, wants to check if skills are up to date, needs to sync skills to a new machine, wants to search for or discover new skills, or wants to edit or update the contents of a skill's SKILL.md file. If the user mentions "equip" by name, this skill definitely applies.
 ---
 
 # equip: Cross-Agent Skill Manager
 
-> **Warning:** equip is under active development (v0.3.1). Expect breaking changes — there are no backwards compatibility guarantees yet.
+> **Warning:** equip is under active development (v0.5.0). Expect breaking changes — there are no backwards compatibility guarantees yet.
 
 `equip` is a CLI that installs SKILL.md files to the correct directory for every AI coding agent on the user's machine. It auto-detects which agents are present and copies skills to all of them in one command. Skills install globally by default.
 
@@ -171,13 +171,26 @@ equip agents                      # writes AGENTS.md from project-local skills
 equip agents --output SKILLS.md   # custom output path
 ```
 
+### Search the Registry
+
+```bash
+equip search "code review"                # search for skills by keyword
+equip search testing --sort installs      # sort by popularity
+equip search --limit 10 --json            # machine-readable output
+```
+
 ### Configuration
 
 ```bash
 equip config                              # show all settings
 equip config projects_path ~/dev          # set default survey scan path
 equip config projects_path unset          # clear a setting
+equip config telemetry off                # disable anonymous telemetry
 ```
+
+### Telemetry
+
+equip collects anonymous usage data (install/uninstall/update events) to power install counts in search results. No personal information is collected. Opt out with `equip config telemetry off`.
 
 ## JSON Output
 
