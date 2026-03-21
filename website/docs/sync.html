@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cross-Machine Sync — equip docs</title>
+  <meta name="description" content="Sync your equip skills across machines using GitHub or cloud storage.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+  <nav id="nav" class="scrolled">
+    <div class="nav-inner">
+      <a href="../" class="nav-brand">equip</a>
+      <div class="nav-links">
+        <a href="./">Docs</a>
+        <a href="https://github.com/bradleydwyer/equip" target="_blank" rel="noopener" class="nav-ext">GitHub <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3.5 1.5H10.5V8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10.5 1.5L1.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+        <a href="../#install" class="btn-nav">Install</a>
+      </div>
+      <button class="nav-toggle" aria-label="Menu"><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="docs-sidebar-overlay"></div>
+
+  <div class="docs-layout">
+    <aside class="docs-sidebar" id="sidebar">
+      <nav class="docs-nav">
+        <a href="./" class="docs-nav-link">Home</a>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Getting Started</div>
+          <a href="getting-started.html" class="docs-nav-link">Installation &amp; Quickstart</a>
+        </div>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Guide</div>
+          <a href="concepts.html" class="docs-nav-link">Concepts</a>
+          <a href="agents.html" class="docs-nav-link">Agents</a>
+          <a href="sync.html" class="docs-nav-link">Cross-Machine Sync</a>
+        </div>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Reference</div>
+          <a href="commands.html" class="docs-nav-link">CLI Commands</a>
+          <a href="configuration.html" class="docs-nav-link">Configuration</a>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="docs-content">
+      <h1>Cross-Machine Sync</h1>
+      <p class="subtitle">Keep your skills in sync across every machine with a GitHub repo or cloud storage folder.</p>
+
+      <h2 id="overview">Overview</h2>
+
+      <p>equip's sync workflow has four steps:</p>
+
+      <ol>
+        <li><strong>Init</strong> — link your machine to a sync backend (GitHub repo or file path)</li>
+        <li><strong>Export</strong> — push your current skill set to the backend</li>
+        <li><strong>Restore</strong> — install all skills from the backend on a new machine</li>
+        <li><strong>Status</strong> — see what's synced, missing, or untracked</li>
+      </ol>
+
+      <h2 id="backends">Sync backends</h2>
+
+      <h3 id="github-backend">GitHub repository</h3>
+
+      <p>The default backend. equip stores your skill manifest in a GitHub repo (private by default).</p>
+
+      <pre><code><span class="prompt">$</span> equip init
+<span class="success">✓</span> Linked to <span class="highlight">bradleydwyer/equip-loadout</span></code></pre>
+
+      <p>By default, equip uses <code>&lt;your-github-username&gt;/equip-loadout</code>. Specify a custom repo:</p>
+
+      <pre><code><span class="prompt">$</span> equip init user/custom-repo</code></pre>
+
+      <p>Choose the git protocol:</p>
+
+      <pre><code><span class="prompt">$</span> equip init <span class="flag">--protocol</span> ssh</code></pre>
+
+      <h3 id="file-backend">File path</h3>
+
+      <p>Use a folder synced by iCloud, Dropbox, Google Drive, or a NAS:</p>
+
+      <pre><code><span class="prompt">$</span> equip init <span class="flag">--path</span> ~/Library/Mobile\ Documents/com~apple~CloudDocs/equip/</code></pre>
+
+      <p>Any path that's accessible on both machines works.</p>
+
+      <h2 id="export">Exporting skills</h2>
+
+      <p>Push your current skill manifest to the sync backend:</p>
+
+      <pre><code><span class="prompt">$</span> equip export
+<span class="success">✓</span> Exported 12 skills to <span class="highlight">bradleydwyer/equip-loadout</span></code></pre>
+
+      <p>Or export to a local file instead of the configured backend:</p>
+
+      <pre><code><span class="prompt">$</span> equip export <span class="flag">--output</span> skills.json</code></pre>
+
+      <p>The export contains a list of skill sources, not the skill files themselves. This keeps the manifest small and always pulls fresh content on restore.</p>
+
+      <h2 id="restore">Restoring on a new machine</h2>
+
+      <p>After installing equip on a new machine, restore all your skills:</p>
+
+      <pre><code><span class="prompt">$</span> equip init           <span class="comment"># Link to the same backend</span>
+<span class="prompt">$</span> equip restore
+<span class="success">✓</span> Restored 12 skills to 4 agents</code></pre>
+
+      <p>Restore from a file:</p>
+
+      <pre><code><span class="prompt">$</span> equip restore <span class="flag">--from</span> skills.json</code></pre>
+
+      <p>Preview what would be installed without making changes:</p>
+
+      <pre><code><span class="prompt">$</span> equip restore <span class="flag">--dry-run</span></code></pre>
+
+      <h2 id="status">Checking sync status</h2>
+
+      <p>See which skills are synced, missing from the backend, or installed locally but not exported:</p>
+
+      <pre><code><span class="prompt">$</span> equip status
+<span class="output">  Synced:</span>
+<span class="output">    skill-creator         ✓</span>
+<span class="output">    frontend-design       ✓</span>
+<span class="output">  Missing locally:</span>
+<span class="output">    commit                ✗ (run equip restore)</span>
+<span class="output">  Untracked:</span>
+<span class="output">    my-local-skill        (run equip export)</span></code></pre>
+
+      <h2 id="typical-workflow">Typical workflow</h2>
+
+      <h3 id="initial-setup">Initial setup (first machine)</h3>
+
+      <pre><code><span class="prompt">$</span> equip init                    <span class="comment"># Link to GitHub</span>
+<span class="prompt">$</span> equip install owner/skill-a   <span class="comment"># Install skills as normal</span>
+<span class="prompt">$</span> equip install owner/skill-b
+<span class="prompt">$</span> equip export                  <span class="comment"># Push manifest</span></code></pre>
+
+      <h3 id="new-machine">New machine</h3>
+
+      <pre><code><span class="prompt">$</span> brew install bradleydwyer/tap/equip
+<span class="prompt">$</span> equip init                    <span class="comment"># Same backend</span>
+<span class="prompt">$</span> equip restore                 <span class="comment"># All skills installed</span></code></pre>
+
+      <h3 id="ongoing">Ongoing</h3>
+
+      <pre><code><span class="prompt">$</span> equip install owner/new-skill
+<span class="prompt">$</span> equip export                  <span class="comment"># Keep backend up to date</span></code></pre>
+
+      <div class="docs-pager">
+        <a href="agents.html">
+          <div class="pager-dir">Previous</div>
+          <div class="pager-title">Agents</div>
+        </a>
+        <a href="commands.html" class="pager-next">
+          <div class="pager-dir">Next</div>
+          <div class="pager-title">CLI Commands</div>
+        </a>
+      </div>
+    </main>
+
+    <aside class="docs-toc" id="toc"></aside>
+  </div>
+
+  <script src="docs.js"></script>
+</body>
+</html>

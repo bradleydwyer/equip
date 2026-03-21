@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuration — equip docs</title>
+  <meta name="description" content="equip configuration settings, telemetry controls, and JSON output.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+  <nav id="nav" class="scrolled">
+    <div class="nav-inner">
+      <a href="../" class="nav-brand">equip</a>
+      <div class="nav-links">
+        <a href="./">Docs</a>
+        <a href="https://github.com/bradleydwyer/equip" target="_blank" rel="noopener" class="nav-ext">GitHub <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3.5 1.5H10.5V8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10.5 1.5L1.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+        <a href="../#install" class="btn-nav">Install</a>
+      </div>
+      <button class="nav-toggle" aria-label="Menu"><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="docs-sidebar-overlay"></div>
+
+  <div class="docs-layout">
+    <aside class="docs-sidebar" id="sidebar">
+      <nav class="docs-nav">
+        <a href="./" class="docs-nav-link">Home</a>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Getting Started</div>
+          <a href="getting-started.html" class="docs-nav-link">Installation &amp; Quickstart</a>
+        </div>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Guide</div>
+          <a href="concepts.html" class="docs-nav-link">Concepts</a>
+          <a href="agents.html" class="docs-nav-link">Agents</a>
+          <a href="sync.html" class="docs-nav-link">Cross-Machine Sync</a>
+        </div>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Reference</div>
+          <a href="commands.html" class="docs-nav-link">CLI Commands</a>
+          <a href="configuration.html" class="docs-nav-link">Configuration</a>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="docs-content">
+      <h1>Configuration</h1>
+      <p class="subtitle">Settings, telemetry controls, and JSON output options.</p>
+
+      <h2 id="config-command">The config command</h2>
+
+      <p>View and modify equip settings with <code>equip config</code>:</p>
+
+      <pre><code><span class="prompt">$</span> equip config
+<span class="output">  projects_path: ~/dev</span>
+<span class="output">  telemetry: on</span></code></pre>
+
+      <h3 id="setting-values">Setting values</h3>
+
+      <pre><code><span class="prompt">$</span> equip config projects_path ~/dev</code></pre>
+
+      <h3 id="clearing-values">Clearing values</h3>
+
+      <pre><code><span class="prompt">$</span> equip config projects_path unset</code></pre>
+
+      <h2 id="settings">Settings reference</h2>
+
+      <table>
+        <thead>
+          <tr><th>Key</th><th>Default</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>projects_path</code></td><td><em>unset</em></td><td>Default directory path for <code>equip survey --path</code></td></tr>
+          <tr><td><code>telemetry</code></td><td><code>on</code></td><td>Enable or disable anonymous telemetry</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="projects-path">projects_path</h3>
+
+      <p>When set, <code>equip survey</code> uses this as the default scan path instead of requiring <code>--path</code> each time:</p>
+
+      <pre><code><span class="prompt">$</span> equip config projects_path ~/dev
+
+<span class="comment"># Now these are equivalent:</span>
+<span class="prompt">$</span> equip survey
+<span class="prompt">$</span> equip survey <span class="flag">--path</span> ~/dev</code></pre>
+
+      <h2 id="telemetry">Telemetry</h2>
+
+      <p>equip collects anonymous usage data to power registry install counts. This helps the community discover popular skills.</p>
+
+      <h3 id="what-is-collected">What is collected</h3>
+
+      <ul>
+        <li>Random client ID (not tied to your identity)</li>
+        <li>Skill name and event type (install, uninstall, update)</li>
+        <li>Operating system</li>
+        <li>equip version</li>
+      </ul>
+
+      <h3 id="what-is-not-collected">What is not collected</h3>
+
+      <ul>
+        <li>No personal information</li>
+        <li>No file contents</li>
+        <li>No IP addresses</li>
+        <li>No usage patterns or session data</li>
+      </ul>
+
+      <h3 id="opting-out">Opting out</h3>
+
+      <pre><code><span class="prompt">$</span> equip config telemetry off</code></pre>
+
+      <p>Re-enable with:</p>
+
+      <pre><code><span class="prompt">$</span> equip config telemetry on</code></pre>
+
+      <h2 id="json-output">JSON output</h2>
+
+      <p>Most commands support <code>--json</code> for machine-readable output. This is useful for scripting and automation.</p>
+
+      <pre><code><span class="prompt">$</span> equip list <span class="flag">--json</span>
+<span class="output">[</span>
+<span class="output">  {</span>
+<span class="output">    "name": "skill-creator",</span>
+<span class="output">    "source": "anthropics/skill-creator",</span>
+<span class="output">    "agents": ["claude", "cursor", "windsurf"],</span>
+<span class="output">    "up_to_date": true</span>
+<span class="output">  }</span>
+<span class="output">]</span></code></pre>
+
+      <p>Commands that support <code>--json</code>:</p>
+
+      <ul>
+        <li><code>equip list --json</code></li>
+        <li><code>equip search --json</code></li>
+        <li><code>equip update --json</code></li>
+        <li><code>equip outdated --json</code></li>
+        <li><code>equip survey --json</code></li>
+      </ul>
+
+      <h2 id="config-location">Config file location</h2>
+
+      <p>equip stores its configuration at <code>~/.config/equip/config.json</code>. You generally don't need to edit this file directly — use <code>equip config</code> instead.</p>
+
+      <div class="docs-pager">
+        <a href="commands.html">
+          <div class="pager-dir">Previous</div>
+          <div class="pager-title">CLI Commands</div>
+        </a>
+        <a href="./" class="pager-next">
+          <div class="pager-dir">Back to</div>
+          <div class="pager-title">Documentation</div>
+        </a>
+      </div>
+    </main>
+
+    <aside class="docs-toc" id="toc"></aside>
+  </div>
+
+  <script src="docs.js"></script>
+</body>
+</html>

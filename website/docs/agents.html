@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agents — equip docs</title>
+  <meta name="description" content="All 18 AI coding agents supported by equip, with directory paths and targeting options.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+  <nav id="nav" class="scrolled">
+    <div class="nav-inner">
+      <a href="../" class="nav-brand">equip</a>
+      <div class="nav-links">
+        <a href="./">Docs</a>
+        <a href="https://github.com/bradleydwyer/equip" target="_blank" rel="noopener" class="nav-ext">GitHub <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3.5 1.5H10.5V8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10.5 1.5L1.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+        <a href="../#install" class="btn-nav">Install</a>
+      </div>
+      <button class="nav-toggle" aria-label="Menu"><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="docs-sidebar-overlay"></div>
+
+  <div class="docs-layout">
+    <aside class="docs-sidebar" id="sidebar">
+      <nav class="docs-nav">
+        <a href="./" class="docs-nav-link">Home</a>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Getting Started</div>
+          <a href="getting-started.html" class="docs-nav-link">Installation &amp; Quickstart</a>
+        </div>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Guide</div>
+          <a href="concepts.html" class="docs-nav-link">Concepts</a>
+          <a href="agents.html" class="docs-nav-link">Agents</a>
+          <a href="sync.html" class="docs-nav-link">Cross-Machine Sync</a>
+        </div>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Reference</div>
+          <a href="commands.html" class="docs-nav-link">CLI Commands</a>
+          <a href="configuration.html" class="docs-nav-link">Configuration</a>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="docs-content">
+      <h1>Agents</h1>
+      <p class="subtitle">equip supports 18 AI coding agents. Skills are automatically distributed to every detected agent.</p>
+
+      <h2 id="auto-detection">Auto-detection</h2>
+
+      <p>When you run <code>equip install</code>, equip scans your home directory for agent configuration directories. If a directory exists, the agent is considered installed and receives skills.</p>
+
+      <p>No configuration is required. equip just works with whatever agents you have installed.</p>
+
+      <h2 id="supported-agents">Supported agents</h2>
+
+      <p>The table below shows every supported agent with its CLI identifier and skill directory paths.</p>
+
+      <table>
+        <thead>
+          <tr><th>Agent</th><th>ID</th><th>Project-Local</th><th>Global</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Claude Code</td><td><code>claude</code></td><td><code>.claude/skills/</code></td><td><code>~/.claude/skills/</code></td></tr>
+          <tr><td>Cursor</td><td><code>cursor</code></td><td><code>.cursor/skills/</code></td><td><code>~/.cursor/skills/</code></td></tr>
+          <tr><td>Windsurf</td><td><code>windsurf</code></td><td><code>.windsurf/skills/</code></td><td><code>~/.codeium/windsurf/skills/</code></td></tr>
+          <tr><td>Codex</td><td><code>codex</code></td><td><code>.codex/skills/</code></td><td><code>~/.codex/skills/</code></td></tr>
+          <tr><td>Gemini CLI</td><td><code>gemini</code></td><td><code>.gemini/skills/</code></td><td><code>~/.gemini/skills/</code></td></tr>
+          <tr><td>Cline</td><td><code>cline</code></td><td><code>.cline/skills/</code></td><td><code>~/.cline/skills/</code></td></tr>
+          <tr><td>Continue</td><td><code>continue</code></td><td><code>.continue/skills/</code></td><td><code>~/.continue/skills/</code></td></tr>
+          <tr><td>GitHub Copilot</td><td><code>copilot</code></td><td><code>.github/skills/</code></td><td><code>~/.github/skills/</code></td></tr>
+          <tr><td>Zed</td><td><code>zed</code></td><td><code>.zed/skills/</code></td><td><code>~/.zed/skills/</code></td></tr>
+          <tr><td>Amp</td><td><code>amp</code></td><td><code>.agents/skills/</code></td><td><code>~/.config/agents/skills/</code></td></tr>
+          <tr><td>Goose</td><td><code>goose</code></td><td><code>.goose/skills/</code></td><td><code>~/.config/goose/skills/</code></td></tr>
+          <tr><td>OpenCode</td><td><code>opencode</code></td><td><code>.opencode/skill/</code></td><td><code>~/.config/opencode/skill/</code></td></tr>
+          <tr><td>Kilo Code</td><td><code>kilo</code></td><td><code>.kilocode/skills/</code></td><td><code>~/.kilocode/skills/</code></td></tr>
+          <tr><td>Kiro</td><td><code>kiro</code></td><td><code>.kiro/skills/</code></td><td><code>~/.kiro/skills/</code></td></tr>
+          <tr><td>Roo Code</td><td><code>roo</code></td><td><code>.roo/skills/</code></td><td><code>~/.roo/skills/</code></td></tr>
+          <tr><td>Sourcegraph Cody</td><td><code>cody</code></td><td><code>.sourcegraph/skills/</code></td><td><code>~/.sourcegraph/skills/</code></td></tr>
+          <tr><td>Pear AI</td><td><code>pearai</code></td><td><code>.pearai/skills/</code></td><td><code>~/.pearai/skills/</code></td></tr>
+          <tr><td>pi-mono</td><td><code>pi</code></td><td><code>.agents/skills/</code></td><td><code>~/.pi/agent/skills/</code></td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="targeting">Targeting specific agents</h2>
+
+      <p>By default, equip installs to all detected agents. Use <code>--agent</code> to target specific ones:</p>
+
+      <pre><code><span class="prompt">$</span> equip install owner/repo <span class="flag">--agent</span> claude
+<span class="success">✓</span> Installed <span class="highlight">my-skill</span> to 1 agent
+<span class="output">  → claude-code</span></code></pre>
+
+      <p>Comma-separate multiple agent IDs:</p>
+
+      <pre><code><span class="prompt">$</span> equip install owner/repo <span class="flag">--agent</span> claude,cursor,windsurf</code></pre>
+
+      <h2 id="all-agents">Installing to all agents</h2>
+
+      <p>Use <code>--all</code> to install to all 18 agents, even those that aren't detected on your machine:</p>
+
+      <pre><code><span class="prompt">$</span> equip install owner/repo <span class="flag">--all</span>
+<span class="success">✓</span> Installed <span class="highlight">my-skill</span> to 18 agents</code></pre>
+
+      <p>This is useful when preparing a project that will be used by team members with different agents installed.</p>
+
+      <h2 id="agents-md">Generating AGENTS.md</h2>
+
+      <p>The <code>equip agents</code> command generates an <code>AGENTS.md</code> file listing all skills available in the current project:</p>
+
+      <pre><code><span class="prompt">$</span> equip agents
+<span class="success">✓</span> Generated AGENTS.md</code></pre>
+
+      <p>You can customize the output file:</p>
+
+      <pre><code><span class="prompt">$</span> equip agents <span class="flag">--output</span> SKILLS.md</code></pre>
+
+      <div class="docs-pager">
+        <a href="concepts.html">
+          <div class="pager-dir">Previous</div>
+          <div class="pager-title">Concepts</div>
+        </a>
+        <a href="sync.html" class="pager-next">
+          <div class="pager-dir">Next</div>
+          <div class="pager-title">Cross-Machine Sync</div>
+        </a>
+      </div>
+    </main>
+
+    <aside class="docs-toc" id="toc"></aside>
+  </div>
+
+  <script src="docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>equip — Skill manager for AI coding agents</title>
+  <meta name="description" content="Install and sync SKILL.md files across 18 AI coding agents. One command, all your agents. Zero dependencies.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <nav id="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">equip</a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#agents">Agents</a>
+        <a href="#search">Search</a>
+        <a href="docs/">Docs</a>
+        <a href="https://github.com/bradleydwyer/equip" target="_blank" rel="noopener" class="nav-ext">GitHub <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3.5 1.5H10.5V8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10.5 1.5L1.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+        <a href="#install" class="btn-nav">Install</a>
+      </div>
+      <button class="nav-toggle" aria-label="Menu"><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">v0.5.0 &middot; MIT License</div>
+      <h1>One command.<br>All your agents.</h1>
+      <p class="hero-sub">Install and sync SKILL.md files across 18 AI coding agents. Single static binary. Zero dependencies. No configuration needed.</p>
+      <div class="hero-ctas">
+        <a href="#install" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Install equip
+        </a>
+        <a href="https://github.com/bradleydwyer/equip" target="_blank" rel="noopener" class="btn btn-ghost">View Source</a>
+      </div>
+      <div class="hero-terminal">
+        <div class="term">
+          <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">terminal</span></div>
+          <div class="term-body" id="hero-term">
+            <div class="tl" data-d="0"><span class="tp">$</span> brew install bradleydwyer/tap/equip</div>
+            <div class="tl" data-d="1200"><span class="to">==&gt;</span> Installing equip</div>
+            <div class="tl" data-d="2000"><span class="ts">✓</span> equip installed</div>
+            <div class="tl" data-d="3200"><span class="tp">$</span> equip install anthropics/skill-creator</div>
+            <div class="tl" data-d="4400"><span class="ts">✓</span> Installed <span class="tw">skill-creator</span> to 3 agents</div>
+            <div class="tl" data-d="5000"><span class="td">  → claude-code, cursor, windsurf</span></div>
+            <div class="tl" data-d="6200"><span class="tp">$</span> equip search "frontend design"</div>
+            <div class="tl" data-d="7200"><span class="td">  1. <span class="tw">frontend-design</span>      Create production-grade UIs</span></div>
+            <div class="tl" data-d="7400"><span class="td">  2. <span class="tw">tailwind-helper</span>      Tailwind CSS patterns</span></div>
+            <div class="tl" data-d="7600"><span class="td">  3. <span class="tw">react-components</span>     React component library</span></div>
+            <div class="tl" data-d="8800"><span class="tp">$</span> equip list</div>
+            <div class="tl" data-d="9600"><span class="td">  skill-creator       3 agents  ✓ up to date</span></div>
+            <div class="tl" data-d="9800"><span class="td">  frontend-design     3 agents  ✓ up to date</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent Grid -->
+  <section class="agents-section" id="agents">
+    <div class="section-inner">
+      <h2>Works with every agent you use</h2>
+      <p class="section-sub">equip auto-detects which agents are installed. No configuration. Just run <code>equip install</code>.</p>
+      <div class="agent-grid">
+        <div class="agent-chip">Claude Code</div>
+        <div class="agent-chip">Cursor</div>
+        <div class="agent-chip">Codex</div>
+        <div class="agent-chip">Windsurf</div>
+        <div class="agent-chip">Gemini CLI</div>
+        <div class="agent-chip">Cline</div>
+        <div class="agent-chip">Continue</div>
+        <div class="agent-chip">GitHub Copilot</div>
+        <div class="agent-chip">Zed</div>
+        <div class="agent-chip">Amp</div>
+        <div class="agent-chip">Goose</div>
+        <div class="agent-chip">OpenCode</div>
+        <div class="agent-chip">Kilo Code</div>
+        <div class="agent-chip">Kiro</div>
+        <div class="agent-chip">Roo Code</div>
+        <div class="agent-chip">Sourcegraph Cody</div>
+        <div class="agent-chip">Pear AI</div>
+        <div class="agent-chip">pi-mono</div>
+      </div>
+      <p class="agent-count">18 agents supported</p>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features" id="features">
+    <div class="section-inner">
+      <h2>Everything you need to manage skills</h2>
+      <div class="features-grid">
+        <div class="feature reveal">
+          <div class="fi">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <h3>Install from anywhere</h3>
+          <p>GitHub repos, git URLs, or local paths. Skills from Anthropic, the community, or your own team — all installed the same way.</p>
+          <code>equip install owner/repo</code>
+        </div>
+        <div class="feature reveal">
+          <div class="fi">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          </div>
+          <h3>Keep skills updated</h3>
+          <p>Detect outdated skills and pull the latest version from source. Local edits are preserved with warnings.</p>
+          <code>equip update</code>
+        </div>
+        <div class="feature reveal">
+          <div class="fi">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <h3>Discover 180K+ skills</h3>
+          <p>Search the registry for community skills. Sorted by popularity. Full-text search across names and descriptions.</p>
+          <code>equip search "query"</code>
+        </div>
+        <div class="feature reveal">
+          <div class="fi">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <h3>Sync across machines</h3>
+          <p>Link to a GitHub repo or cloud folder. Export your skills, restore on a new machine with one command.</p>
+          <code>equip restore</code>
+        </div>
+        <div class="feature reveal">
+          <div class="fi">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <h3>Audit your setup</h3>
+          <p>Survey finds duplicates, version mismatches, unmanaged skills, and sprawl. Fix mode resolves issues interactively.</p>
+          <code>equip survey --fix</code>
+        </div>
+        <div class="feature reveal">
+          <div class="fi">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          </div>
+          <h3>Zero dependencies</h3>
+          <p>Single static Rust binary. No Node.js, no Python, no runtimes. Download once, works forever.</p>
+          <code>brew install bradleydwyer/tap/equip</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Search / Registry -->
+  <section class="registry" id="search">
+    <div class="section-inner">
+      <h2>180,000+ skills indexed</h2>
+      <p class="section-sub">The equip registry indexes skills from GitHub, community sources, and official agent repositories. Full-text search with popularity ranking.</p>
+      <div class="registry-demo reveal">
+        <div class="term">
+          <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">equip search</span></div>
+          <div class="term-body">
+            <pre><code><span class="tp">$</span> equip search "commit" --sort installs
+
+  <span class="tw">commit</span>                Create conventional commits         <span class="td">⬇ 2,841</span>
+  <span class="tw">commit-push-pr</span>        Commit, push, and open a PR          <span class="td">⬇ 1,204</span>
+  <span class="tw">git-workflow</span>          Git branching and merge strategies    <span class="td">⬇   892</span>
+  <span class="tw">conventional</span>          Conventional commit messages          <span class="td">⬇   445</span>
+
+<span class="tp">$</span> equip install anthropics/commit
+<span class="ts">✓</span> Installed <span class="tw">commit</span> to 4 agents
+<span class="td">  → claude-code, cursor, windsurf, cline</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="how" id="how">
+    <div class="section-inner">
+      <h2>How it works</h2>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-n">1</div>
+          <h3>Install equip</h3>
+          <p>One Homebrew command or a binary download. No runtimes to install first.</p>
+          <code>brew install bradleydwyer/tap/equip</code>
+        </div>
+        <div class="step-line"></div>
+        <div class="step reveal">
+          <div class="step-n">2</div>
+          <h3>Install a skill</h3>
+          <p>Point at a GitHub repo. equip detects your agents and distributes the skill to all of them.</p>
+          <code>equip install owner/skill-repo</code>
+        </div>
+        <div class="step-line"></div>
+        <div class="step reveal">
+          <div class="step-n">3</div>
+          <h3>Use it everywhere</h3>
+          <p>The skill is now available in Claude Code, Cursor, Windsurf — wherever you code. No agent-specific setup.</p>
+          <code>equip list</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Install -->
+  <section class="install-section" id="install">
+    <div class="section-inner">
+      <h2>Get started</h2>
+      <div class="install-options">
+        <div class="install-card reveal">
+          <h3>Homebrew</h3>
+          <div class="install-code">
+            <code id="brew-cmd">brew install bradleydwyer/tap/equip</code>
+            <button class="copy-btn" data-target="brew-cmd">Copy</button>
+          </div>
+        </div>
+        <div class="install-card reveal">
+          <h3>Binary download</h3>
+          <p class="install-desc">Grab the latest release for your platform from GitHub Releases.</p>
+          <a href="https://github.com/bradleydwyer/equip/releases" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Download &rarr;</a>
+        </div>
+        <div class="install-card reveal">
+          <h3>Build from source</h3>
+          <div class="install-code">
+            <code id="src-cmd">cargo install --git https://github.com/bradleydwyer/equip</code>
+            <button class="copy-btn" data-target="src-cmd">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLI Reference -->
+  <section class="cli-ref">
+    <div class="section-inner">
+      <h2>Commands</h2>
+      <div class="cmd-grid">
+        <div class="cmd"><code>equip install &lt;source&gt;</code><span>Install a skill from GitHub, git URL, or local path</span></div>
+        <div class="cmd"><code>equip remove &lt;name&gt;</code><span>Remove a skill from all agents</span></div>
+        <div class="cmd"><code>equip update [name]</code><span>Pull latest version from source</span></div>
+        <div class="cmd"><code>equip list</code><span>Show installed skills and their agents</span></div>
+        <div class="cmd"><code>equip search &lt;query&gt;</code><span>Search 180K+ skills in the registry</span></div>
+        <div class="cmd"><code>equip outdated</code><span>Check for upstream changes</span></div>
+        <div class="cmd"><code>equip survey</code><span>Find duplicates, mismatches, sprawl</span></div>
+        <div class="cmd"><code>equip export</code><span>Export skills for cross-machine sync</span></div>
+        <div class="cmd"><code>equip restore</code><span>Restore skills on a new machine</span></div>
+        <div class="cmd"><code>equip agents</code><span>Generate AGENTS.md with skill list</span></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <span class="footer-brand">equip</span>
+      <span class="footer-mid">Built with Rust</span>
+      <span class="footer-right">MIT License</span>
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>

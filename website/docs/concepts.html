@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Concepts — equip docs</title>
+  <meta name="description" content="Core concepts: skills, sources, agents, and scopes in equip.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+  <nav id="nav" class="scrolled">
+    <div class="nav-inner">
+      <a href="../" class="nav-brand">equip</a>
+      <div class="nav-links">
+        <a href="./">Docs</a>
+        <a href="https://github.com/bradleydwyer/equip" target="_blank" rel="noopener" class="nav-ext">GitHub <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3.5 1.5H10.5V8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10.5 1.5L1.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+        <a href="../#install" class="btn-nav">Install</a>
+      </div>
+      <button class="nav-toggle" aria-label="Menu"><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="docs-sidebar-overlay"></div>
+
+  <div class="docs-layout">
+    <aside class="docs-sidebar" id="sidebar">
+      <nav class="docs-nav">
+        <a href="./" class="docs-nav-link">Home</a>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Getting Started</div>
+          <a href="getting-started.html" class="docs-nav-link">Installation &amp; Quickstart</a>
+        </div>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Guide</div>
+          <a href="concepts.html" class="docs-nav-link">Concepts</a>
+          <a href="agents.html" class="docs-nav-link">Agents</a>
+          <a href="sync.html" class="docs-nav-link">Cross-Machine Sync</a>
+        </div>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Reference</div>
+          <a href="commands.html" class="docs-nav-link">CLI Commands</a>
+          <a href="configuration.html" class="docs-nav-link">Configuration</a>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="docs-content">
+      <h1>Concepts</h1>
+      <p class="subtitle">The building blocks of equip: skills, sources, agents, and scopes.</p>
+
+      <h2 id="skills">Skills</h2>
+
+      <p>A <strong>skill</strong> is a directory containing a <code>SKILL.md</code> file. The <code>SKILL.md</code> provides instructions that AI coding agents read and follow. Think of it as a reusable prompt that teaches an agent how to perform a specific task.</p>
+
+      <h3 id="skill-format">SKILL.md format</h3>
+
+      <p>Every <code>SKILL.md</code> starts with YAML frontmatter, followed by markdown content:</p>
+
+      <pre><code>---
+name: my-skill
+description: What this skill does
+---
+
+# My Skill
+
+Instructions for AI agents go here.
+When an agent reads this file, it follows
+these instructions to perform the task.</code></pre>
+
+      <p>The frontmatter fields:</p>
+
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>name</code></td><td>Yes</td><td>Unique identifier for the skill (kebab-case)</td></tr>
+          <tr><td><code>description</code></td><td>Yes</td><td>One-line summary of what the skill does</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="skill-structure">Skill directory structure</h3>
+
+      <p>A skill directory can optionally include supporting files:</p>
+
+      <pre><code>my-skill/
+  SKILL.md           <span class="comment"># Required — skill instructions</span>
+  references/        <span class="comment"># Optional — reference documents the agent can read</span>
+    api-spec.md
+    examples.md
+  scripts/           <span class="comment"># Optional — scripts the agent can run</span>
+    validate.sh
+  assets/            <span class="comment"># Optional — other supporting files</span>
+    template.json</code></pre>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Note</div>
+        <p>Skills managed by equip should not be edited directly in their installed location. Edit the source repo instead, then run <code>equip update</code> to pull changes.</p>
+      </div>
+
+      <h2 id="sources">Sources</h2>
+
+      <p>A <strong>source</strong> is where a skill comes from. equip supports three source types:</p>
+
+      <table>
+        <thead>
+          <tr><th>Type</th><th>Format</th><th>Example</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>GitHub repo</td><td><code>owner/repo</code></td><td><code>anthropics/skill-creator</code></td></tr>
+          <tr><td>Git URL</td><td><code>https://...</code> or <code>git@...</code></td><td><code>https://github.com/user/repo.git</code></td></tr>
+          <tr><td>Local path</td><td><code>./path</code> or <code>/absolute/path</code></td><td><code>./my-skills/commit</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="subpaths">Subpaths</h3>
+
+      <p>When a repository contains multiple skills in subdirectories, specify a subpath:</p>
+
+      <pre><code><span class="prompt">$</span> equip install anthropics/skills/skills/pdf
+<span class="comment"># Installs just the "pdf" skill from the anthropics/skills repo</span></code></pre>
+
+      <p>equip tracks which source each skill came from, so <code>equip update</code> knows where to pull from.</p>
+
+      <h2 id="agents">Agents</h2>
+
+      <p>An <strong>agent</strong> is an AI coding tool that reads <code>SKILL.md</code> files. equip supports 18 agents and auto-detects which ones are installed on your machine by checking for their configuration directories.</p>
+
+      <p>When you run <code>equip install</code>, the skill is copied to every detected agent's skills directory. See <a href="agents.html">Agents</a> for the full list and directory paths.</p>
+
+      <h3 id="targeting">Targeting specific agents</h3>
+
+      <p>Install to specific agents only:</p>
+
+      <pre><code><span class="prompt">$</span> equip install owner/repo <span class="flag">--agent</span> claude,cursor</code></pre>
+
+      <p>Or install to all 18 agents regardless of detection:</p>
+
+      <pre><code><span class="prompt">$</span> equip install owner/repo <span class="flag">--all</span></code></pre>
+
+      <h2 id="scopes">Scopes</h2>
+
+      <p>Skills can be installed in two scopes:</p>
+
+      <h3 id="global-scope">Global scope (default)</h3>
+
+      <p>Global skills are installed to each agent's home directory (e.g., <code>~/.claude/skills/</code>) and are available in every project.</p>
+
+      <pre><code><span class="prompt">$</span> equip install owner/repo
+<span class="comment"># Installs to ~/.claude/skills/, ~/.cursor/skills/, etc.</span></code></pre>
+
+      <h3 id="project-local-scope">Project-local scope</h3>
+
+      <p>Project-local skills are installed to agent directories within the current working directory and only apply to that project.</p>
+
+      <pre><code><span class="prompt">$</span> equip install owner/repo <span class="flag">--local</span>
+<span class="comment"># Installs to .claude/skills/, .cursor/skills/, etc. in the current directory</span></code></pre>
+
+      <p>Most commands accept <code>--local</code> to operate on project-local skills: <code>list</code>, <code>remove</code>, <code>update</code>, <code>outdated</code>, <code>survey</code>.</p>
+
+      <div class="callout callout-tip">
+        <div class="callout-title">Tip</div>
+        <p>Project-local skills are useful for team-specific workflows. Commit the <code>.claude/skills/</code> (or equivalent) directory to version control so everyone on the team gets the same skills.</p>
+      </div>
+
+      <div class="docs-pager">
+        <a href="getting-started.html">
+          <div class="pager-dir">Previous</div>
+          <div class="pager-title">Getting Started</div>
+        </a>
+        <a href="agents.html" class="pager-next">
+          <div class="pager-dir">Next</div>
+          <div class="pager-title">Agents</div>
+        </a>
+      </div>
+    </main>
+
+    <aside class="docs-toc" id="toc"></aside>
+  </div>
+
+  <script src="docs.js"></script>
+</body>
+</html>

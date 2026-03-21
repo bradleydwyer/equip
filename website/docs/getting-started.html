@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Getting Started — equip docs</title>
+  <meta name="description" content="Install equip and set up your first SKILL.md in under a minute.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+  <nav id="nav" class="scrolled">
+    <div class="nav-inner">
+      <a href="../" class="nav-brand">equip</a>
+      <div class="nav-links">
+        <a href="./">Docs</a>
+        <a href="https://github.com/bradleydwyer/equip" target="_blank" rel="noopener" class="nav-ext">GitHub <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3.5 1.5H10.5V8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10.5 1.5L1.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+        <a href="../#install" class="btn-nav">Install</a>
+      </div>
+      <button class="nav-toggle" aria-label="Menu"><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="docs-sidebar-overlay"></div>
+
+  <div class="docs-layout">
+    <aside class="docs-sidebar" id="sidebar">
+      <nav class="docs-nav">
+        <a href="./" class="docs-nav-link">Home</a>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Getting Started</div>
+          <a href="getting-started.html" class="docs-nav-link">Installation &amp; Quickstart</a>
+        </div>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Guide</div>
+          <a href="concepts.html" class="docs-nav-link">Concepts</a>
+          <a href="agents.html" class="docs-nav-link">Agents</a>
+          <a href="sync.html" class="docs-nav-link">Cross-Machine Sync</a>
+        </div>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Reference</div>
+          <a href="commands.html" class="docs-nav-link">CLI Commands</a>
+          <a href="configuration.html" class="docs-nav-link">Configuration</a>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="docs-content">
+      <h1>Getting Started</h1>
+      <p class="subtitle">Install equip and manage your first skill in under a minute.</p>
+
+      <h2 id="install">Install equip</h2>
+
+      <h3 id="homebrew">Homebrew (macOS / Linux)</h3>
+      <pre><code><span class="prompt">$</span> brew install bradleydwyer/tap/equip</code></pre>
+
+      <h3 id="binary">Binary download</h3>
+      <p>Grab the latest release for your platform from <a href="https://github.com/bradleydwyer/equip/releases" target="_blank" rel="noopener">GitHub Releases</a>. Extract the binary and add it to your <code>PATH</code>.</p>
+
+      <h3 id="source">Build from source</h3>
+      <pre><code><span class="prompt">$</span> cargo install --git https://github.com/bradleydwyer/equip</code></pre>
+      <p>Requires a <a href="https://www.rust-lang.org/tools/install" target="_blank" rel="noopener">Rust toolchain</a>.</p>
+
+      <h3 id="verify">Verify installation</h3>
+      <pre><code><span class="prompt">$</span> equip --version
+<span class="output">equip 0.5.0</span></code></pre>
+
+      <h2 id="first-skill">Install your first skill</h2>
+
+      <p>Skills are installed from GitHub repos, git URLs, or local paths. The simplest form is <code>owner/repo</code>:</p>
+
+      <pre><code><span class="prompt">$</span> equip install anthropics/skill-creator
+<span class="success">✓</span> Installed <span class="highlight">skill-creator</span> to 3 agents
+<span class="output">  → claude-code, cursor, windsurf</span></code></pre>
+
+      <p>equip auto-detects which agents are installed on your machine and distributes the skill to all of them. No configuration needed.</p>
+
+      <div class="callout callout-tip">
+        <div class="callout-title">Tip</div>
+        <p>Use <code>equip search "query"</code> to discover skills from the registry of 180,000+ indexed skills.</p>
+      </div>
+
+      <h2 id="list-skills">List installed skills</h2>
+
+      <pre><code><span class="prompt">$</span> equip list
+<span class="output">  skill-creator       3 agents  ✓ up to date</span>
+<span class="output">  frontend-design     3 agents  ✓ up to date</span></code></pre>
+
+      <p>Add <code>--long</code> for full descriptions, or <code>--json</code> for machine-readable output.</p>
+
+      <h2 id="update-skills">Update skills</h2>
+
+      <p>Pull the latest version of all installed skills from their sources:</p>
+
+      <pre><code><span class="prompt">$</span> equip update
+<span class="success">✓</span> Updated <span class="highlight">skill-creator</span> (1 file changed)
+<span class="output">  ✓ frontend-design is up to date</span></code></pre>
+
+      <p>Or update a specific skill by name:</p>
+
+      <pre><code><span class="prompt">$</span> equip update skill-creator</code></pre>
+
+      <h2 id="project-local">Project-local skills</h2>
+
+      <p>By default, skills install globally (available everywhere). Use <code>--local</code> to install into the current project only:</p>
+
+      <pre><code><span class="prompt">$</span> equip install ./my-skill --local
+<span class="success">✓</span> Installed <span class="highlight">my-skill</span> to 3 agents (project-local)</code></pre>
+
+      <p>Project-local skills live in directories like <code>.claude/skills/</code>, <code>.cursor/skills/</code>, etc. within your project root. See <a href="concepts.html#scopes">Scopes</a> for details.</p>
+
+      <h2 id="remove-skills">Remove a skill</h2>
+
+      <pre><code><span class="prompt">$</span> equip remove skill-creator
+<span class="success">✓</span> Removed <span class="highlight">skill-creator</span> from 3 agents</code></pre>
+
+      <h2 id="next-steps">Next steps</h2>
+
+      <ul>
+        <li><a href="concepts.html">Concepts</a> — understand skills, sources, agents, and scopes</li>
+        <li><a href="agents.html">Agents</a> — see all 18 supported agents and how to target them</li>
+        <li><a href="sync.html">Cross-Machine Sync</a> — keep skills in sync across machines</li>
+        <li><a href="commands.html">CLI Commands</a> — full reference for every command</li>
+      </ul>
+
+      <div class="docs-pager">
+        <a href="./">
+          <div class="pager-dir">Previous</div>
+          <div class="pager-title">Documentation</div>
+        </a>
+        <a href="concepts.html" class="pager-next">
+          <div class="pager-dir">Next</div>
+          <div class="pager-title">Concepts</div>
+        </a>
+      </div>
+    </main>
+
+    <aside class="docs-toc" id="toc"></aside>
+  </div>
+
+  <script src="docs.js"></script>
+</body>
+</html>

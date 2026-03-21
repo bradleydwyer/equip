@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLI Commands — equip docs</title>
+  <meta name="description" content="Complete CLI reference for every equip command, flag, and option.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+  <nav id="nav" class="scrolled">
+    <div class="nav-inner">
+      <a href="../" class="nav-brand">equip</a>
+      <div class="nav-links">
+        <a href="./">Docs</a>
+        <a href="https://github.com/bradleydwyer/equip" target="_blank" rel="noopener" class="nav-ext">GitHub <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3.5 1.5H10.5V8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10.5 1.5L1.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+        <a href="../#install" class="btn-nav">Install</a>
+      </div>
+      <button class="nav-toggle" aria-label="Menu"><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="docs-sidebar-overlay"></div>
+
+  <div class="docs-layout">
+    <aside class="docs-sidebar" id="sidebar">
+      <nav class="docs-nav">
+        <a href="./" class="docs-nav-link">Home</a>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Getting Started</div>
+          <a href="getting-started.html" class="docs-nav-link">Installation &amp; Quickstart</a>
+        </div>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Guide</div>
+          <a href="concepts.html" class="docs-nav-link">Concepts</a>
+          <a href="agents.html" class="docs-nav-link">Agents</a>
+          <a href="sync.html" class="docs-nav-link">Cross-Machine Sync</a>
+        </div>
+        <div class="docs-nav-group">
+          <div class="docs-nav-heading">Reference</div>
+          <a href="commands.html" class="docs-nav-link">CLI Commands</a>
+          <a href="configuration.html" class="docs-nav-link">Configuration</a>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="docs-content">
+      <h1>CLI Commands</h1>
+      <p class="subtitle">Complete reference for every equip command, flag, and option.</p>
+
+      <h2 id="global-flags">Global flags</h2>
+
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--local</code></td><td>Operate on project-local skills instead of global</td></tr>
+          <tr><td><code>--agent &lt;id&gt;</code></td><td>Target specific agents (comma-separated IDs)</td></tr>
+          <tr><td><code>--all</code></td><td>Target all 18 agents regardless of detection</td></tr>
+          <tr><td><code>--json</code></td><td>Machine-readable JSON output</td></tr>
+          <tr><td><code>--version</code></td><td>Print version</td></tr>
+          <tr><td><code>--help</code></td><td>Print help</td></tr>
+        </tbody>
+      </table>
+
+      <!-- install -->
+      <h2 id="install">install</h2>
+
+      <p>Install a skill from a GitHub repo, git URL, or local path.</p>
+
+      <pre><code>equip install &lt;source&gt; [options]</code></pre>
+
+      <h3 id="install-source-formats">Source formats</h3>
+
+      <table>
+        <thead>
+          <tr><th>Format</th><th>Example</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>GitHub shorthand</td><td><code>equip install owner/repo</code></td></tr>
+          <tr><td>GitHub with subpath</td><td><code>equip install owner/repo/path/to/skill</code></td></tr>
+          <tr><td>Git URL</td><td><code>equip install https://github.com/user/repo.git</code></td></tr>
+          <tr><td>Local path</td><td><code>equip install ./my-skill</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="install-options">Options</h3>
+
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--local</code></td><td>Install to project-local scope</td></tr>
+          <tr><td><code>--agent &lt;id&gt;</code></td><td>Install to specific agents only</td></tr>
+          <tr><td><code>--all</code></td><td>Install to all 18 agents</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="install-examples">Examples</h3>
+
+      <pre><code><span class="prompt">$</span> equip install anthropics/skill-creator
+<span class="success">✓</span> Installed <span class="highlight">skill-creator</span> to 3 agents
+<span class="output">  → claude-code, cursor, windsurf</span>
+
+<span class="prompt">$</span> equip install ./my-skill <span class="flag">--local</span> <span class="flag">--agent</span> claude
+<span class="success">✓</span> Installed <span class="highlight">my-skill</span> to 1 agent (project-local)</code></pre>
+
+      <!-- remove -->
+      <h2 id="remove">remove</h2>
+
+      <p>Remove a skill from all agents. Alias: <code>uninstall</code>.</p>
+
+      <pre><code>equip remove &lt;name&gt; [options]</code></pre>
+
+      <h3 id="remove-options">Options</h3>
+
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--local</code></td><td>Remove from project-local scope</td></tr>
+          <tr><td><code>--agent &lt;id&gt;</code></td><td>Remove from specific agents only</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="remove-examples">Examples</h3>
+
+      <pre><code><span class="prompt">$</span> equip remove skill-creator
+<span class="success">✓</span> Removed <span class="highlight">skill-creator</span> from 3 agents
+
+<span class="prompt">$</span> equip uninstall my-skill <span class="flag">--local</span></code></pre>
+
+      <!-- update -->
+      <h2 id="update">update</h2>
+
+      <p>Pull the latest version from source. Updates all skills or a specific one.</p>
+
+      <pre><code>equip update [name] [options]</code></pre>
+
+      <h3 id="update-options">Options</h3>
+
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--local</code></td><td>Update project-local skills</td></tr>
+          <tr><td><code>--json</code></td><td>JSON output</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="update-examples">Examples</h3>
+
+      <pre><code><span class="prompt">$</span> equip update
+<span class="success">✓</span> Updated <span class="highlight">skill-creator</span> (1 file changed)
+<span class="output">  ✓ frontend-design is up to date</span>
+
+<span class="prompt">$</span> equip update skill-creator</code></pre>
+
+      <!-- list -->
+      <h2 id="list">list</h2>
+
+      <p>Show installed skills and which agents have them.</p>
+
+      <pre><code>equip list [options]</code></pre>
+
+      <h3 id="list-options">Options</h3>
+
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--long</code></td><td>Include full descriptions</td></tr>
+          <tr><td><code>--local</code></td><td>List project-local skills</td></tr>
+          <tr><td><code>--json</code></td><td>JSON output</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="list-examples">Examples</h3>
+
+      <pre><code><span class="prompt">$</span> equip list
+<span class="output">  skill-creator       3 agents  ✓ up to date</span>
+<span class="output">  frontend-design     3 agents  ✓ up to date</span>
+
+<span class="prompt">$</span> equip list <span class="flag">--long</span>
+<span class="output">  skill-creator       3 agents  ✓ up to date</span>
+<span class="output">    Create new skills, modify and improve existing skills</span>
+<span class="output">  frontend-design     3 agents  ✓ up to date</span>
+<span class="output">    Create production-grade frontend interfaces</span></code></pre>
+
+      <!-- search -->
+      <h2 id="search">search</h2>
+
+      <p>Search the registry of 180,000+ indexed skills.</p>
+
+      <pre><code>equip search &lt;query&gt; [options]</code></pre>
+
+      <h3 id="search-options">Options</h3>
+
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--sort &lt;field&gt;</code></td><td>Sort by: <code>relevance</code> (default), <code>installs</code>, <code>name</code></td></tr>
+          <tr><td><code>--limit &lt;n&gt;</code></td><td>Number of results (default: 10)</td></tr>
+          <tr><td><code>--json</code></td><td>JSON output</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="search-examples">Examples</h3>
+
+      <pre><code><span class="prompt">$</span> equip search "commit" <span class="flag">--sort</span> installs
+<span class="output">  commit                Create conventional commits         ⬇ 2,841</span>
+<span class="output">  commit-push-pr        Commit, push, and open a PR          ⬇ 1,204</span>
+<span class="output">  git-workflow          Git branching and merge strategies    ⬇   892</span></code></pre>
+
+      <!-- outdated -->
+      <h2 id="outdated">outdated</h2>
+
+      <p>Check for upstream or local changes without applying them.</p>
+
+      <pre><code>equip outdated [name] [options]</code></pre>
+
+      <h3 id="outdated-options">Options</h3>
+
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--local</code></td><td>Check project-local skills</td></tr>
+          <tr><td><code>--json</code></td><td>JSON output</td></tr>
+        </tbody>
+      </table>
+
+      <!-- survey -->
+      <h2 id="survey">survey</h2>
+
+      <p>Scan for duplicates, version mismatches, unmanaged skills, and sprawl.</p>
+
+      <pre><code>equip survey [options]</code></pre>
+
+      <h3 id="survey-options">Options</h3>
+
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--local</code></td><td>Survey project-local skills only</td></tr>
+          <tr><td><code>--path &lt;dir&gt;</code></td><td>Scan a directory tree for skills</td></tr>
+          <tr><td><code>--fix</code></td><td>Interactively fix issues</td></tr>
+          <tr><td><code>--json</code></td><td>JSON output</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="survey-examples">Examples</h3>
+
+      <pre><code><span class="prompt">$</span> equip survey
+<span class="output">  Duplicates:</span>
+<span class="output">    commit — found in claude, cursor (different versions)</span>
+<span class="output">  Unmanaged:</span>
+<span class="output">    ~/.cursor/skills/old-skill/ (no equip metadata)</span>
+
+<span class="prompt">$</span> equip survey <span class="flag">--fix</span>
+<span class="output">  Fix duplicate "commit"? [y/N]</span>
+
+<span class="prompt">$</span> equip survey <span class="flag">--path</span> ~/dev</code></pre>
+
+      <!-- init -->
+      <h2 id="init">init</h2>
+
+      <p>Link to a sync backend for cross-machine sync. See <a href="sync.html">Cross-Machine Sync</a>.</p>
+
+      <pre><code>equip init [repo] [options]</code></pre>
+
+      <h3 id="init-options">Options</h3>
+
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--path &lt;dir&gt;</code></td><td>Use a file path backend instead of GitHub</td></tr>
+          <tr><td><code>--protocol &lt;ssh|https&gt;</code></td><td>Git protocol for GitHub backend</td></tr>
+        </tbody>
+      </table>
+
+      <!-- export -->
+      <h2 id="export">export</h2>
+
+      <p>Push your skill manifest to the sync backend.</p>
+
+      <pre><code>equip export [options]</code></pre>
+
+      <h3 id="export-options">Options</h3>
+
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--output &lt;file&gt;</code></td><td>Export to a local file instead of the backend</td></tr>
+        </tbody>
+      </table>
+
+      <!-- restore -->
+      <h2 id="restore">restore</h2>
+
+      <p>Install all skills from the sync backend on a new machine.</p>
+
+      <pre><code>equip restore [options]</code></pre>
+
+      <h3 id="restore-options">Options</h3>
+
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--from &lt;file&gt;</code></td><td>Restore from a local file instead of the backend</td></tr>
+          <tr><td><code>--dry-run</code></td><td>Preview without installing</td></tr>
+        </tbody>
+      </table>
+
+      <!-- status -->
+      <h2 id="status">status</h2>
+
+      <p>Show sync state: what's synced, missing, or untracked.</p>
+
+      <pre><code>equip status</code></pre>
+
+      <!-- agents command -->
+      <h2 id="agents-command">agents</h2>
+
+      <p>Generate an <code>AGENTS.md</code> file listing all project skills.</p>
+
+      <pre><code>equip agents [options]</code></pre>
+
+      <h3 id="agents-options">Options</h3>
+
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--output &lt;file&gt;</code></td><td>Custom output filename (default: <code>AGENTS.md</code>)</td></tr>
+        </tbody>
+      </table>
+
+      <!-- config -->
+      <h2 id="config">config</h2>
+
+      <p>View and modify equip settings. See <a href="configuration.html">Configuration</a> for details.</p>
+
+      <pre><code>equip config [key] [value]</code></pre>
+
+      <h3 id="config-examples">Examples</h3>
+
+      <pre><code><span class="prompt">$</span> equip config                         <span class="comment"># Show all settings</span>
+<span class="prompt">$</span> equip config projects_path ~/dev     <span class="comment"># Set a value</span>
+<span class="prompt">$</span> equip config projects_path unset     <span class="comment"># Clear a value</span>
+<span class="prompt">$</span> equip config telemetry off           <span class="comment"># Disable telemetry</span></code></pre>
+
+      <div class="docs-pager">
+        <a href="sync.html">
+          <div class="pager-dir">Previous</div>
+          <div class="pager-title">Cross-Machine Sync</div>
+        </a>
+        <a href="configuration.html" class="pager-next">
+          <div class="pager-dir">Next</div>
+          <div class="pager-title">Configuration</div>
+        </a>
+      </div>
+    </main>
+
+    <aside class="docs-toc" id="toc"></aside>
+  </div>
+
+  <script src="docs.js"></script>
+</body>
+</html>
