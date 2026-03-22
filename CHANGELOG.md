@@ -1,9 +1,13 @@
 # Changelog
 
+## 0.6.0
+
+- **Breaking:** Rename `includes` file to `equip-includes` for clarity
+
 ## 0.1.2
 
 - Add `equip list --short` flag for compact output (names only, no descriptions)
-- Add cycle detection for recursive `includes` files
+- Add cycle detection for recursive `equip-includes` files
 - Unified install output: per-skill ticks instead of agent list
 - Braille spinner for include installs
 - Guard `equip init` against unpushed changes in existing sync repo (`--force` to override)
@@ -45,7 +49,7 @@
 
 ## 0.0.2
 
-- `equip install` now processes `includes` files found in the source repo, installing referenced skills automatically
+- `equip install` now processes `equip-includes` files found in the source repo, installing referenced skills automatically
 - Shared `read_includes` between install and restore (was duplicated in restore only)
 - Added VM integration test script (`scripts/test-vm.sh`)
 
@@ -60,5 +64,5 @@ Current features:
 - Cross-machine skill sync via GitHub repos or cloud-synced folders
 - `equip survey` and `equip fix` for skill sprawl detection
 - `equip outdated` and `equip update` for drift detection
-- `includes` file support for referencing skills from other repos
+- `equip-includes` file support for referencing skills from other repos
 - `--json` flag on all commands

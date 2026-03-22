@@ -72,7 +72,7 @@ equip restore                              # install everything from the manifes
 equip status                               # check sync state
 ```
 
-Reference skills from other repos with an `includes` file in your sync repo:
+Reference skills from other repos with an `equip-includes` file in your sync repo:
 
 ```
 bradleydwyer/available

@@ -292,7 +292,7 @@ checksum = "34aa73646ffb006b8f5147f3dc182bd4bcb190227ce861fc4a4844bf8e3cb2c0"
 
 [[package]]
 name = "equip"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "assert_cmd",
  "clap",
@@ -308,7 +308,7 @@ dependencies = [
 [[package]]
 name = "equip-lib"
 version = "0.1.0"
-source = "git+https://github.com/bradleydwyer/equip-lib#83d32c0c7542873c0da945decf5db1bf794db6ef"
+source = "git+https://github.com/bradleydwyer/equip-lib#c4938d73e661aacba8c6af21c21e61320c5b5ae2"
 
 [[package]]
 name = "equivalent"

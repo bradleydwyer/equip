@@ -128,12 +128,12 @@ pub fn run(from: Option<&str>, dry_run: bool, json: bool) -> Result<(), String> 
         }
     }
 
-    // Process includes file (only in backend mode, not --from file)
+    // Process equip-includes file (only in backend mode, not --from file)
     if from.is_none()
         && let Ok(Some(cfg)) = config::read()
         && let Ok(root) = config::backend_root(&cfg)
     {
-        let includes_path = root.join("includes");
+        let includes_path = root.join("equip-includes");
         if includes_path.exists() {
             let includes = skill::read_includes(&includes_path)?;
             if !includes.is_empty() {

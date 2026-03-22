@@ -47,7 +47,7 @@ fn run_inner(
     json: bool,
     quiet: bool,
 ) -> Result<(), String> {
-    // Cycle detection for recursive includes
+    // Cycle detection for recursive equip-includes
     let already_installing = INSTALLING.with(|s| !s.borrow_mut().insert(source_str.to_string()));
     if already_installing {
         return Ok(()); // Skip silently — already being installed up the call stack
@@ -119,8 +119,8 @@ fn do_install(
 ) -> Result<(), String> {
     let skills = skill::discover_skills(skill_dir)?;
 
-    // Resolve includes upfront so we can show total count
-    let includes_path = skill_dir.join("includes");
+    // Resolve equip-includes upfront so we can show total count
+    let includes_path = skill_dir.join("equip-includes");
     let includes = if includes_path.exists() {
         skill::read_includes(&includes_path).unwrap_or_default()
     } else {
@@ -250,7 +250,7 @@ fn do_install(
         crate::telemetry::send("install", Some(&skill_name), Some(source_str));
     }
 
-    // Install includes as part of the same flow
+    // Install equip-includes as part of the same flow
     for inc_source in &includes {
         let spinner = if !json && !quiet {
             Some(output::Spinner::start(inc_source))
