@@ -1,3 +1,6 @@
+use dialoguer::{FuzzySelect, theme::ColorfulTheme};
+
+use crate::commands;
 use crate::output;
 
 const REGISTRY_URL: &str = "https://registry.equip.codes";
@@ -56,16 +59,16 @@ pub fn run(
     if json {
         print_json(&response)?;
     } else {
-        print_table(&q, &response);
+        interactive_select(&q, &response)?;
     }
 
     Ok(())
 }
 
-fn print_table(query: &str, response: &SearchResponse) {
+fn interactive_select(query: &str, response: &SearchResponse) -> Result<(), String> {
     if response.skills.is_empty() {
         println!("No results for {}", output::bold(&format!("\"{query}\"")));
-        return;
+        return Ok(());
     }
 
     println!(
@@ -82,34 +85,42 @@ fn print_table(query: &str, response: &SearchResponse) {
         .unwrap_or(0);
     let name_width = max_name + 2;
 
-    let max_source = response
+    let items: Vec<String> = response
         .skills
         .iter()
-        .map(|s| s.install_cmd.len())
-        .max()
-        .unwrap_or(0);
-    let source_width = max_source + 2;
+        .map(|s| {
+            let padded_name = format!("{:<width$}", s.name, width = name_width);
+            let desc = s
+                .description
+                .as_deref()
+                .map(|d| truncate(d, 52))
+                .unwrap_or_default();
+            format!(
+                "{}  {}  {}",
+                padded_name,
+                desc,
+                format_installs(s.installs),
+            )
+        })
+        .collect();
 
-    for skill in &response.skills {
-        let padded_name = format!("{:<width$}", skill.name, width = name_width);
-        let padded_source = format!("{:<width$}", skill.install_cmd, width = source_width);
+    let selection = FuzzySelect::with_theme(&ColorfulTheme::default())
+        .items(&items)
+        .default(0)
+        .highlight_matches(true)
+        .interact_opt()
+        .map_err(|e| format!("Selection failed: {e}"))?;
 
-        println!(
-            "  {} {} {}",
-            output::bold(&padded_name),
-            output::dim(&padded_source),
-            output::dim(&format_installs(skill.installs)),
-        );
+    let Some(idx) = selection else {
+        return Ok(());
+    };
 
-        if let Some(desc) = &skill.description {
-            let truncated = truncate(desc, 72);
-            if !truncated.is_empty() {
-                println!("    {}", output::dim(&truncated));
-            }
-        }
-    }
-
-    println!("\n  Install: {}", output::dim("equip install <source>"),);
+    let skill = &response.skills[idx];
+    println!(
+        "\nInstalling {} ...\n",
+        output::bold(&skill.install_cmd),
+    );
+    commands::install::run(&skill.install_cmd, true, &[], false, false)
 }
 
 fn print_json(response: &SearchResponse) -> Result<(), String> {

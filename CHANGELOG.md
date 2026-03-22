@@ -3,6 +3,7 @@
 ## 0.6.0
 
 - **Breaking:** Rename `includes` file to `equip-includes` for clarity
+- Interactive search: `equip search` now shows a fuzzy-select picker — arrow keys to browse, type to filter, Enter to install directly
 
 ## 0.1.2
 
