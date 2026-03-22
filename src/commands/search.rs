@@ -95,12 +95,7 @@ fn interactive_select(query: &str, response: &SearchResponse) -> Result<(), Stri
                 .as_deref()
                 .map(|d| truncate(d, 52))
                 .unwrap_or_default();
-            format!(
-                "{}  {}  {}",
-                padded_name,
-                desc,
-                format_installs(s.installs),
-            )
+            format!("{}  {}  {}", padded_name, desc, format_installs(s.installs),)
         })
         .collect();
 
@@ -116,10 +111,7 @@ fn interactive_select(query: &str, response: &SearchResponse) -> Result<(), Stri
     };
 
     let skill = &response.skills[idx];
-    println!(
-        "\nInstalling {} ...\n",
-        output::bold(&skill.install_cmd),
-    );
+    println!("\nInstalling {} ...\n", output::bold(&skill.install_cmd),);
     commands::install::run(&skill.install_cmd, true, &[], false, false)
 }
 
