@@ -89,9 +89,29 @@ pub fn push(config: &EquipConfig) -> Result<(), String> {
                 );
             }
 
-            // Stage ops/, skills/, and README
+            // Stage ops/, skills/, and README (only paths that exist)
+            let mut add_args = vec!["-C", &repo_str, "add"];
+            let ops_path = repo.join(".ops");
+            let skills_path = repo.join("skills");
+            let readme_path = repo.join("README.md");
+            let ops_str = ops_path.display().to_string();
+            let skills_str = skills_path.display().to_string();
+            let readme_str = readme_path.display().to_string();
+            if ops_path.exists() {
+                add_args.push(&ops_str);
+            }
+            if skills_path.exists() {
+                add_args.push(&skills_str);
+            }
+            if readme_path.exists() {
+                add_args.push(&readme_str);
+            }
+            if add_args.len() == 3 {
+                // Nothing to stage
+                return Ok(());
+            }
             let add = Command::new("git")
-                .args(["-C", &repo_str, "add", ".ops/", "skills/", "README.md"])
+                .args(&add_args)
                 .output()
                 .map_err(|e| format!("Failed to run git add: {e}"))?;
             if !add.status.success() {
