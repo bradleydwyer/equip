@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1
+
+- Fix sync failure when `skills/` directory doesn't exist in loadout repo
+
 ## 0.6.0
 
 - **Breaking:** Rename `includes` file to `equip-includes` for clarity
