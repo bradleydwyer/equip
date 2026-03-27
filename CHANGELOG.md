@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.2
+
+- Speed up `equip restore`: pre-clone all repos in parallel and skip redundant sync pushes
+- Skip sync write-back during restore (restoring from backend no longer pushes back to it per skill)
+
 ## 0.6.1
 
 - Fix sync failure when `skills/` directory doesn't exist in loadout repo
