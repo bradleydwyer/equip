@@ -56,6 +56,8 @@ pub fn run(
         s.stop();
     }
 
+    crate::telemetry::send("search", None, None);
+
     if json {
         print_json(&response)?;
     } else {

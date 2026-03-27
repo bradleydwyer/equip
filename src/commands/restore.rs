@@ -1,8 +1,12 @@
+use std::collections::HashMap;
+use std::path::PathBuf;
+
 use crate::commands::install;
 use crate::config;
 use crate::ops;
 use crate::output;
 use crate::skill;
+use crate::source::SkillSource;
 use crate::sync;
 
 pub fn run(from: Option<&str>, dry_run: bool, json: bool) -> Result<(), String> {
@@ -68,10 +72,30 @@ pub fn run(from: Option<&str>, dry_run: bool, json: bool) -> Result<(), String> 
         return Ok(());
     }
 
+    // Collect equip-includes sources (only in backend mode)
+    let includes: Vec<String> = if from.is_none()
+        && let Ok(Some(cfg)) = config::read()
+        && let Ok(root) = config::backend_root(&cfg)
+    {
+        let includes_path = root.join("equip-includes");
+        if includes_path.exists() {
+            skill::read_includes(&includes_path).unwrap_or_default()
+        } else {
+            Vec::new()
+        }
+    } else {
+        Vec::new()
+    };
+
+    let total_count = skills.len() + includes.len();
     if !json {
-        println!("Restoring {} skill(s)...\n", skills.len());
+        println!("Restoring {} skill(s)...\n", total_count);
     }
 
+    // Phase 1: Pre-clone all unique remote repos in parallel
+    let clones = pre_clone_repos(&skills, &includes);
+
+    // Phase 2: Install sequentially from pre-cloned dirs (fast — no network)
     let mut restored = 0;
     let mut skipped = 0;
     let mut failed = 0;
@@ -82,14 +106,16 @@ pub fn run(from: Option<&str>, dry_run: bool, json: bool) -> Result<(), String> 
             print!("  {} ", output::bold(&s.name));
         }
 
-        // Prefer original source URL, fall back to local repo content
-        // Skip "adopted" as a source — it's not a valid install target
         let result = if let Some(source) = &s.source
             && source != "adopted"
         {
-            install::run_quiet(source, true, &[], true)
+            if let Some(clone_dir) = clones.get(source.as_str()) {
+                install::run_from_clone(source, clone_dir, true, &[], true)
+            } else {
+                install::run_quiet_no_sync(source, true, &[], true)
+            }
         } else if let Some(local_path) = &s.local_path {
-            install::run_quiet(&local_path.display().to_string(), true, &[], true)
+            install::run_quiet_no_sync(&local_path.display().to_string(), true, &[], true)
         } else {
             if !json {
                 println!("{}", output::dim("(no source — skipped)"));
@@ -128,45 +154,40 @@ pub fn run(from: Option<&str>, dry_run: bool, json: bool) -> Result<(), String> 
         }
     }
 
-    // Process equip-includes file (only in backend mode, not --from file)
-    if from.is_none()
-        && let Ok(Some(cfg)) = config::read()
-        && let Ok(root) = config::backend_root(&cfg)
-    {
-        let includes_path = root.join("equip-includes");
-        if includes_path.exists() {
-            let includes = skill::read_includes(&includes_path)?;
-            if !includes.is_empty() {
-                if !json && !dry_run {
-                    println!("\nRestoring {} include(s)...\n", includes.len());
-                }
-                for source in &includes {
-                    if dry_run {
-                        if !json {
-                            println!("  {} {}", output::bold(source), output::dim("(include)"));
-                        }
-                        continue;
-                    }
+    // Install includes from pre-cloned dirs
+    if !includes.is_empty() {
+        if !json {
+            println!("\nRestoring {} include(s)...\n", includes.len());
+        }
+        for source in &includes {
+            if !json {
+                print!("  {} ", output::bold(source));
+            }
+            let result = if let Some(clone_dir) = clones.get(source.as_str()) {
+                install::run_from_clone(source, clone_dir, true, &[], true)
+            } else {
+                install::run_quiet_no_sync(source, true, &[], true)
+            };
+            match result {
+                Ok(()) => {
                     if !json {
-                        print!("  {} ", output::bold(source));
+                        println!("{}", output::green("✓"));
                     }
-                    match install::run_quiet(source, true, &[], true) {
-                        Ok(()) => {
-                            if !json {
-                                println!("{}", output::green("✓"));
-                            }
-                            restored += 1;
-                        }
-                        Err(e) => {
-                            if !json {
-                                eprintln!("{}", output::red(&format!("✗ {e}")));
-                            }
-                            failed += 1;
-                        }
+                    restored += 1;
+                }
+                Err(e) => {
+                    if !json {
+                        eprintln!("{}", output::red(&format!("✗ {e}")));
                     }
+                    failed += 1;
                 }
             }
         }
+    }
+
+    // Cleanup pre-cloned temp dirs
+    for dir in clones.values() {
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     if json {
@@ -235,6 +256,67 @@ fn read_from_backend() -> Result<Vec<RestoreEntry>, String> {
             }
         })
         .collect())
+}
+
+/// Pre-clone all unique remote repos in parallel, returning source_str -> temp_dir mapping.
+fn pre_clone_repos(skills: &[RestoreEntry], includes: &[String]) -> HashMap<String, PathBuf> {
+    // Collect all remote sources and deduplicate by clone URL
+    let mut url_to_sources: HashMap<String, Vec<String>> = HashMap::new();
+    for source_str in skills
+        .iter()
+        .filter_map(|s| s.source.as_deref())
+        .filter(|s| *s != "adopted")
+        .chain(includes.iter().map(|s| s.as_str()))
+    {
+        if let Ok(source) = SkillSource::parse(source_str)
+            && let Some(clone_url) = source.git_clone_url()
+        {
+            url_to_sources
+                .entry(clone_url)
+                .or_default()
+                .push(source_str.to_string());
+        }
+    }
+
+    if url_to_sources.is_empty() {
+        return HashMap::new();
+    }
+
+    // Clone each unique repo in parallel
+    let clone_results: Vec<(String, Result<PathBuf, String>)> = std::thread::scope(|s| {
+        let handles: Vec<_> = url_to_sources
+            .keys()
+            .map(|url| {
+                let url = url.clone();
+                s.spawn(move || {
+                    let temp = install::temp_clone_dir();
+                    let result = install::clone_repo(&url, &temp);
+                    (url, result.map(|()| temp))
+                })
+            })
+            .collect();
+
+        handles
+            .into_iter()
+            .map(|h| {
+                h.join()
+                    .unwrap_or_else(|_| ("".into(), Err("thread panicked".into())))
+            })
+            .collect()
+    });
+
+    // Build source_str -> temp_dir mapping
+    let mut result: HashMap<String, PathBuf> = HashMap::new();
+    for (url, clone_result) in clone_results {
+        if let Ok(temp_dir) = clone_result
+            && let Some(source_strs) = url_to_sources.get(&url)
+        {
+            for source_str in source_strs {
+                result.insert(source_str.clone(), temp_dir.clone());
+            }
+        }
+    }
+    result
 }
 
 fn read_from_file(path: &str) -> Result<Vec<RestoreEntry>, String> {

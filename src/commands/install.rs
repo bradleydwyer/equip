@@ -26,7 +26,7 @@ pub fn run(
     all: bool,
     json: bool,
 ) -> Result<(), String> {
-    run_inner(source_str, global, agent_ids, all, json, false)
+    run_inner(source_str, global, agent_ids, all, json, false, false)
 }
 
 /// Run install without any output (used by restore)
@@ -36,7 +36,57 @@ pub fn run_quiet(
     agent_ids: &[String],
     all: bool,
 ) -> Result<(), String> {
-    run_inner(source_str, global, agent_ids, all, false, true)
+    run_inner(source_str, global, agent_ids, all, false, true, false)
+}
+
+/// Run install without output and skip sync (used by restore from backend)
+pub fn run_quiet_no_sync(
+    source_str: &str,
+    global: bool,
+    agent_ids: &[String],
+    all: bool,
+) -> Result<(), String> {
+    run_inner(source_str, global, agent_ids, all, false, true, true)
+}
+
+/// Run install from a pre-cloned repo dir, skip sync (used by parallel restore)
+pub fn run_from_clone(
+    source_str: &str,
+    clone_dir: &Path,
+    global: bool,
+    agent_ids: &[String],
+    all: bool,
+) -> Result<(), String> {
+    let already_installing = INSTALLING.with(|s| !s.borrow_mut().insert(source_str.to_string()));
+    if already_installing {
+        return Ok(());
+    }
+
+    let project_root =
+        std::env::current_dir().map_err(|e| format!("Failed to get current directory: {e}"))?;
+    let source = SkillSource::parse(source_str)?;
+    let agents = agents::resolve_agents(agent_ids, all, global, &project_root)?;
+
+    let (skill_dir, source_info) = resolve_pre_cloned(&source, clone_dir)?;
+
+    let result = do_install(
+        &skill_dir,
+        &source,
+        source_str,
+        global,
+        &agents,
+        agent_ids,
+        all,
+        &project_root,
+        false,
+        true,
+        true,
+        source_info,
+        Some(clone_dir),
+    );
+
+    INSTALLING.with(|s| s.borrow_mut().remove(source_str));
+    result
 }
 
 fn run_inner(
@@ -46,6 +96,7 @@ fn run_inner(
     all: bool,
     json: bool,
     quiet: bool,
+    skip_sync: bool,
 ) -> Result<(), String> {
     // Cycle detection for recursive equip-includes
     let already_installing = INSTALLING.with(|s| !s.borrow_mut().insert(source_str.to_string()));
@@ -88,6 +139,7 @@ fn run_inner(
         &project_root,
         json,
         quiet,
+        skip_sync,
         source_info,
         temp_dir.as_deref(),
     );
@@ -114,6 +166,7 @@ fn do_install(
     project_root: &Path,
     json: bool,
     quiet: bool,
+    skip_sync: bool,
     source_info: SourceInfo,
     temp_dir: Option<&Path>,
 ) -> Result<(), String> {
@@ -310,7 +363,10 @@ fn do_install(
     }
 
     // Auto-sync: write ops if backend is configured and this is a global install
-    if global && let Ok(Some(cfg)) = config::read() {
+    if !skip_sync
+        && global
+        && let Ok(Some(cfg)) = config::read()
+    {
         for (path, fm) in &skills {
             let skill_name = resolve_skill_name(path, &fm.name, temp_dir);
             let op = ops::add_op(&skill_name, Some(source_str), &fm.description);
@@ -371,6 +427,28 @@ fn resolve_source(source: &SkillSource) -> Result<(PathBuf, Option<PathBuf>, Sou
     }
 }
 
+/// Resolve source info from an already-cloned repo directory
+fn resolve_pre_cloned(
+    source: &SkillSource,
+    clone_dir: &Path,
+) -> Result<(PathBuf, SourceInfo), String> {
+    let info = SourceInfo {
+        commit: get_head_sha(clone_dir),
+        tag: get_head_tag(clone_dir),
+        commit_date: get_commit_date(clone_dir),
+    };
+    if let Some(sp) = source.subpath() {
+        validate_subpath(sp)?;
+        let full = clone_dir.join(sp);
+        if !full.exists() {
+            return Err(format!("Subpath '{}' not found in repository", sp));
+        }
+        Ok((full, info))
+    } else {
+        Ok((clone_dir.to_path_buf(), info))
+    }
+}
+
 fn get_head_sha(repo_dir: &Path) -> Option<String> {
     Command::new("git")
         .args(["-C", &repo_dir.display().to_string(), "rev-parse", "HEAD"])
@@ -413,7 +491,7 @@ fn get_commit_date(repo_dir: &Path) -> Option<String> {
     metadata::iso8601_to_date(&date_str)
 }
 
-fn clone_repo(url: &str, dest: &Path) -> Result<(), String> {
+pub fn clone_repo(url: &str, dest: &Path) -> Result<(), String> {
     Command::new("git").arg("--version").output().map_err(|_| {
         "git is not installed or not in PATH. Install git to use GitHub/URL sources.".to_string()
     })?;
@@ -431,7 +509,7 @@ fn clone_repo(url: &str, dest: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn temp_clone_dir() -> PathBuf {
+pub fn temp_clone_dir() -> PathBuf {
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
