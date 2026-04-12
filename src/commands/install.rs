@@ -17,6 +17,9 @@ use crate::sync;
 thread_local! {
     /// Track sources currently being installed to prevent infinite include cycles.
     static INSTALLING: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
+    /// Track equip-includes that have already been installed in this process,
+    /// to avoid reinstalling the same include from multiple skills during bulk operations.
+    static DONE_INCLUDES: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
 }
 
 pub fn run(
@@ -305,6 +308,12 @@ fn do_install(
 
     // Install equip-includes as part of the same flow
     for inc_source in &includes {
+        // Skip includes already installed in this process (avoids redundant work
+        // when multiple skills share the same includes during bulk update)
+        if DONE_INCLUDES.with(|s| s.borrow().contains(inc_source)) {
+            continue;
+        }
+
         let spinner = if !json && !quiet {
             Some(output::Spinner::start(inc_source))
         } else {
@@ -319,6 +328,9 @@ fn do_install(
 
         match result {
             Ok(()) => {
+                DONE_INCLUDES.with(|s| {
+                    s.borrow_mut().insert(inc_source.clone());
+                });
                 if !json && !quiet {
                     println!("  {} {}", output::bold(inc_source), output::green("✓"));
                 }

@@ -80,17 +80,33 @@ pub fn run(json: bool) -> Result<(), String> {
         .collect();
 
     if json {
-        let out = serde_json::json!({
+        let backend_url = match &cfg {
+            config::EquipConfig::Git { repo_url, .. } => Some(repo_url.as_str()),
+            config::EquipConfig::File { .. } => None,
+        };
+        let mut out = serde_json::json!({
             "synced": synced,
             "missing": missing,
             "untracked": untracked,
         });
+        if let Some(url) = backend_url {
+            out["backend"] = serde_json::Value::String(url.to_string());
+        }
         println!(
             "{}",
             serde_json::to_string_pretty(&out)
                 .map_err(|e| format!("Failed to serialize JSON: {e}"))?
         );
     } else {
+        match &cfg {
+            config::EquipConfig::Git { repo_url, .. } => {
+                println!("Backend: {}\n", output::dim(repo_url));
+            }
+            config::EquipConfig::File { path } => {
+                println!("Backend: {}\n", output::dim(path));
+            }
+        }
+
         if !synced.is_empty() {
             for name in &synced {
                 println!("  {} {}", output::green("✓"), name);

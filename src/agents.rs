@@ -154,13 +154,54 @@ pub fn detect_agents(global: bool, project_root: &Path) -> Result<Vec<&'static A
     Ok(AGENTS
         .iter()
         .filter(|a| {
-            if global {
-                home.join(a.detect_dir).exists()
+            let detect_path = if global {
+                home.join(a.detect_dir)
             } else {
-                project_root.join(a.detect_dir).exists()
+                project_root.join(a.detect_dir)
+            };
+            if !detect_path.exists() {
+                return false;
             }
+            let skill_dir = if global { a.global_dir } else { a.project_dir };
+            has_non_equip_content(&detect_path, skill_dir, a.detect_dir)
         })
         .collect())
+}
+
+/// Check if a detect directory has content beyond what equip would create.
+/// equip creates the skills directory tree (e.g. `skills/` inside `.kiro/`),
+/// so a directory that only contains that tree was likely created by equip
+/// and doesn't indicate the agent is actually installed.
+fn has_non_equip_content(detect_path: &Path, skill_dir: &str, detect_dir: &str) -> bool {
+    // Find the first path component of skill_dir after detect_dir.
+    // e.g. detect_dir=".kiro", skill_dir=".kiro/skills" → "skills"
+    // e.g. detect_dir=".pi", skill_dir=".pi/agent/skills" → "agent"
+    let equip_component = Path::new(skill_dir)
+        .strip_prefix(detect_dir)
+        .ok()
+        .and_then(|p| p.components().next())
+        .map(|c| c.as_os_str().to_string_lossy().to_string());
+
+    let Some(equip_component) = equip_component else {
+        return true;
+    };
+
+    let Ok(entries) = std::fs::read_dir(detect_path) else {
+        return false;
+    };
+
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy();
+        if name_str == ".DS_Store" {
+            continue;
+        }
+        if name_str != equip_component {
+            return true;
+        }
+    }
+
+    false
 }
 
 pub fn find_agents_by_ids(ids: &[String]) -> Result<Vec<&'static AgentDef>, String> {
